@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" sizes="any" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="stylesheet" href="/index.css">
+
+  <title>ScreenStream</title>
+
+  <script src="https://www.datadoghq-browser-agent.com/datadog-logs-v4.js" crossorigin="anonymous"></script>
+
+  <script>
+    window.DD_LOGS &&
+      DD_LOGS.init({
+        clientToken: "pub26fc6543f9239240ed8ae545593f921f",
+        site: "datadoghq.com",
+        forwardErrorsToLogs: true,
+        forwardConsoleLogs: "all",
+        sampleRate: 100,
+        service: "screenstream-dev",
+      })
+    window.DD_LOGS && DD_LOGS.logger.setHandler(["http", "console"]) 
+  </script>
+
+  <script src="https://cdn.socket.io/4.7.1/socket.io.min.js" crossorigin="anonymous"></script>
+  <script>
+    const getTurnstileTokenAsync = function (clientId) {
+      window.DD_LOGS && DD_LOGS.logger.debug(`getTurnstileTokenAsync: clientId=${clientId}`);
+      window.DD_LOGS && DD_LOGS.setGlobalContextProperty("clientId", clientId);
+
+      return new Promise((resolve, reject) => {
+        const turnstileWidgetId = window.turnstile.render("#turnstile-container", {
+          sitekey: "%TURNSTYLE_SITE_KEY%",
+          cData: clientId,
+          callback: function (token) {
+            window.DD_LOGS && DD_LOGS.logger.debug("Got turnstile token");
+            window.turnstile.remove(turnstileWidgetId);
+            resolve(token);
+          }
+        });
+
+        if (turnstileWidgetId == undefined) reject(new Error("ERROR:TURNSTILE_ERROR"));
+      })
+    };
+  </script>
+  <script src="/main.js" type="module"></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" defer></script>
+</head>
+
+<body>
+  <div id="canvas-container"></div>
+
+  <div id="start-container">
+    <img src="/logo.png" style="width: 160px;" />
+    <h2 data-i18n-key="header-welcome">Welcome to ScreenStream</h2>
+    <div data-i18n-key="stream-message">To view stream please enter stream id and password</div><br>
+
+    <form action="" id="startForm" autocomplete="off">
+      <table>
+        <tbody>
+          <tr>
+            <td style="text-align: end;"><label for="stream-id" data-i18n-key="stream-id">Stream Id:</label></td>
+            <td style="text-align: start;"><input id="stream-id" type="text" size="8" minlength="8" maxlength="8" autocomplete="off"></td>
+          </tr>
+          <tr>
+            <td style="text-align: end;"><label for="stream-password" data-i18n-key="stream-password">Stream password:</label></td>
+            <td style="text-align: start;"><input id="stream-password" type="password" size="8" minlength="6" autocomplete="off"></td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <div id="stream-error" style="display: none;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2"><button id="streamJoinButton" type="submit" style="display: none;" data-i18n-key="stream-join">Join stream</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
+    <br>
+    <div class="loading" id="joinButtonLoader" style="margin: 16px;">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <br>
+    <div id="privacy" style="font-size: small; line-height: 150%; color: #aaa;" data-i18n-key="privacy-terms">By joining stream, you agree to<br><a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms and Conditions</a>.</div>
+    <div id="turnstile-container"></div>
+  </div>
+
+  <div id="stream-wait-container" style="display: none;">
+    <img src="/logo.png" style="width: 160px;" />
+    <h2>Screen Stream</h2>
+    <p id="stream-wait-container-text" data-i18n-key="stream-waiting">Waiting for host to start the stream</p>
+    <div class="loading" style="margin: 8px;">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <br>
+    <button id="streamWaitLeaveButton" type="button" data-i18n-key="stream-leave">Leave stream</button>
+  </div>
+
+  <div id="streaming-header" style="display: none;">
+    <table>
+      <tr>
+        <td><img src="/logo.png" /></td>
+        <td style="text-align: center;">
+          <div id="streaming-container-text" data-i18n-key="stream-id-header">Stream Id:</div>
+        </td>
+        <td style="text-align: right;">
+          <button id="streamLeaveButton" type="button" data-i18n-key="stream-leave">Leave stream</button>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div id="video-container" style="display: none;">
+    <video id="video-element" autoplay playsinline controls></video>
+  </div>
+
+  <script src="/bg.js"></script>
+  <script>
+    const renderer = new ModRenderer("#canvas-container");
+    ModManager.load("polygon").then((it) => { renderer.initMod(it).then(() => { renderer.mod._renderer.setSize(window.innerWidth, window.innerHeight) }) });
+    window.addEventListener("resize", () => { renderer.mod._renderer.setSize(window.innerWidth, window.innerHeight) });
+  </script>
+</body>
+
+</html>
