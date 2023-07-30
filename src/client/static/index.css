@@ -202,6 +202,20 @@ body {
     z-index: 1
 }
 
+@media screen and (max-width:850px) {
+    #stream-wait-container {
+        padding: 30px;
+        width: 55%
+    }
+}
+
+@media screen and (max-width:650px) {
+    #stream-wait-container {
+        padding: 30px 20px;
+        width: 85%
+    }
+}
+
 #stream-wait-container img {
     box-shadow: 0 0 4px 4px rgba(0, 0, 0, .2);
     border-radius: 16px
