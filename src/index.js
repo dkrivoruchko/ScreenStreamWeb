@@ -30,7 +30,7 @@ const expressApp = express()
   .get('/app/ping', nocache, (req, res) => { res.sendStatus(204) })
   .get('/app/nonce', nocache, nonceHandler)
   .get('/', (req, res) => { if (req.hostname !== SERVER_ORIGIN) res.redirect(301, `https://${SERVER_ORIGIN}`); else res.send(index); })
-  .get('*', (req, res) => res.redirect('/'));
+  .get('*', (req, res) => res.sendStatus(404));
 
 const expressServer = expressApp.listen(PORT, () => console.warn(`Listening on ${PORT}, Production: ${PROD_NODE_ENV}`));
 
@@ -48,12 +48,6 @@ process.on('SIGTERM', () => {
 });
 
 io.engine.on('connection_error', (err) => { console.error(JSON.stringify({ socket_event: "[connection_error]", message: err.message })); });
-
-io.sockets.adapter
-  .on("create-room", (room) => { console.debug(`Room create: ${room}`); })
-  .on("delete-room", (room) => { console.log(`Room delete: ${room}`); })
-  .on("join-room", (room, id) => { console.log(`Socket ${id} has joined room ${room}`); })
-  .on("leave-room", (room, id) => { console.log(`Socket ${id} has leaved room ${room}`); });
 
 io.use(socketAuth);
 

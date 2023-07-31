@@ -1,5 +1,5 @@
 export class WebRTC {
-    clientId = this.#generateRandomString(24);
+    #clientId = '';
     #socketConnectCounter = 0;
     #disableAutoReconnect = false;
     #socket = null;
@@ -10,6 +10,8 @@ export class WebRTC {
     #isJoinedToStream = false;
     #hostOfferTimeout = null;
 
+    #iceServers = ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302', 'stun:stun4.l.google.com:19302'];
+
     #getTurnstileTokenAsync;
     #onSocketConnect;
     #onSocketDisconnect;
@@ -19,7 +21,8 @@ export class WebRTC {
     #onLeaveStream;
     #onError;
 
-    constructor(getTurnstileTokenAsync, onSocketConnect, onSocketDisconnect, onJoinStream, onShowStream, onHideStream, onLeaveStream, onError) {
+    constructor(clientId, getTurnstileTokenAsync, onSocketConnect, onSocketDisconnect, onJoinStream, onShowStream, onHideStream, onLeaveStream, onError) {
+        this.#clientId = clientId;
         this.#getTurnstileTokenAsync = getTurnstileTokenAsync;
         this.#onSocketConnect = onSocketConnect;
         this.#onSocketDisconnect = onSocketDisconnect;
@@ -42,7 +45,7 @@ export class WebRTC {
     async waitForServerOnlineAndConnect() {
         const online = await this.#isServerOnline();
         if (online === true) {
-            this.#getTurnstileTokenAsync(this.clientId)
+            this.#getTurnstileTokenAsync(this.#clientId)
                 .then((token) => this.#connectSocket(token))
                 .catch((err) => this.#onError(err));
         } else
@@ -194,7 +197,7 @@ export class WebRTC {
         this.#peerConnection = new RTCPeerConnection({
             bundlePolicy: 'max-bundle',
             iceCandidatePoolSize: 8,
-            iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302', 'stun:stun4.l.google.com:19302'] }],
+            iceServers: [{ urls: this.#iceServers.sort(() => .5 - Math.random()).slice(0, 3) }],
         });
 
         this.#hostOfferTimeout = setTimeout(() => {
@@ -211,41 +214,36 @@ export class WebRTC {
 
         this.#peerConnection.ontrack = (event) => this.#onShowStream(event.track);
 
-        let clientCandidates = [];
-
         this.#peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
-                clientCandidates.push(event.candidate.toJSON());
+                this.#socket.timeout(5000).emit('CLIENT:CANDIDATE', { candidate: event.candidate.toJSON() }, (err, response) => {
+                    if (err) {
+                        window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC: [CLIENT:CANDIDATE] timeout: ${err}`);
+                        this.#onError('ERROR:TIMEOUT:CLIENT:CANDIDATE');
+                    } else if (!response || !response.status || response.status !== 'OK') {
+                        window.DD_LOGS && DD_LOGS.logger.error(`WebRTC: Error: ${JSON.stringify(response)}`, { socket_event: '[CLIENT:CANDIDATE]', error: response });
+                        this.#onError('WEBRTC_ERROR:NEGOTIATION_ERROR:CLIENT_CANDIDATE');
+                    } else {
+                        window.DD_LOGS && DD_LOGS.logger.debug('WebRTC: [CLIENT:CANDIDATE] send OK', { socket_event: '[CLIENT:CANDIDATE]' });
+                    }
+                });
             } else {
                 this.#peerConnection.onicecandidate = undefined;
-
-                this.#socket.timeout(5000).emit('CLIENT:CANDIDATES', { candidates: clientCandidates }, (err, response) => {
-                    if (err) {
-                        window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC: [CLIENT:CANDIDATES] timeout: ${err}`);
-                        this.#onError('ERROR:TIMEOUT:CLIENT:CANDIDATES');
-                    } else if (!response || !response.status || response.status !== 'OK') {
-                        window.DD_LOGS && DD_LOGS.logger.error(`WebRTC: Error: ${JSON.stringify(response)}`, { socket_event: '[CLIENT:CANDIDATES]', error: response });
-                        this.#onError('WEBRTC_ERROR:NEGOTIATION_ERROR:CLIENT_CANDIDATES');
-                    } else {
-                        window.DD_LOGS && DD_LOGS.logger.debug('WebRTC: [CLIENT:CANDIDATES] send OK', { socket_event: '[CLIENT:CANDIDATES]', candidates: clientCandidates.length });
-                    }
-                    clientCandidates = [];
-                });
             }
         };
 
-        this.#socket.once('HOST:CANDIDATES', (hostCandidates, callback) => {
-            if (!hostCandidates || !hostCandidates.candidates || !Array.isArray(hostCandidates.candidates)) {
+        this.#socket.on('HOST:CANDIDATE', (hostCandidate, callback) => {
+            if (!hostCandidate || !hostCandidate.candidate) {
                 callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
-                window.DD_LOGS && DD_LOGS.logger.error('WebRTC: Error in host candidates', { socket_event: '[HOST:CANDIDATES]', error: 'ERROR:EMPTY_OR_BAD_DATA', hostCandidates: JSON.stringify(hostCandidates) });
-                this.#onError('WEBRTC_ERROR:NEGOTIATION_ERROR:HOST_CANDIDATES');
+                window.DD_LOGS && DD_LOGS.logger.error('WebRTC: Error in host candidates', { socket_event: '[HOST:CANDIDATE]', error: 'ERROR:EMPTY_OR_BAD_DATA', hostCandidate: hostCandidate.candidate });
+                this.#onError('WEBRTC_ERROR:NEGOTIATION_ERROR:HOST_CANDIDATE');
                 return;
             }
 
             callback({ status: 'OK' });
-            window.DD_LOGS && DD_LOGS.logger.debug('WebRTC: receive [HOST:CANDIDATES]', { socket_event: '[HOST:CANDIDATES]' });
+            window.DD_LOGS && DD_LOGS.logger.debug('WebRTC: receive [HOST:CANDIDATE]', { socket_event: '[HOST:CANDIDATE]' });
 
-            hostCandidates.candidates.forEach(candidateString => this.#peerConnection.addIceCandidate(new RTCIceCandidate(candidateString)));
+            this.#peerConnection.addIceCandidate(new RTCIceCandidate(hostCandidate.candidate));
         });
 
         this.#socket.once('HOST:OFFER', async (hostOffer, callback) => {
@@ -283,7 +281,7 @@ export class WebRTC {
     #stopStream() {
         window.DD_LOGS && DD_LOGS.logger.debug('WebRTC: stopStream');
 
-        this.#socket && this.#socket.off('HOST:CANDIDATES').off('HOST:OFFER');
+        this.#socket && this.#socket.off('HOST:CANDIDATE').off('HOST:OFFER');
 
         if (this.#peerConnection) {
             this.#peerConnection.close();
@@ -320,15 +318,5 @@ export class WebRTC {
         this.#isJoinedToStream = false;
 
         this.#onLeaveStream(forcedByServer, autoReJoin);
-    }
-
-    #generateRandomString(length) {
-        let result = '';
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        const charactersLength = characters.length;
-        for (let i = 0; i < length; i++) {
-            result += characters.charAt(Math.floor(Math.random() * charactersLength));
-        }
-        return result;
     }
 }

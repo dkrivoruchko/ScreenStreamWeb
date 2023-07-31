@@ -3,7 +3,7 @@
 
 import { randomBytes } from 'crypto';
 
-export const NONCE_MIN_WAIT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+const NONCE_MIN_WAIT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 const NONCES_CLEAN_TASK_PERIOD = 2 * 60 * 1000; // 2 minute
 const nonces = new Map();
 

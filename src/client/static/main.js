@@ -1,6 +1,9 @@
 import { Locales } from './locales.js';
 import { WebRTC } from './webrtc.js';
 
+const clientId = generateRandomString(24);
+window.DD_LOGS && DD_LOGS.setGlobalContextProperty("clientId", clientId);
+
 const supportedLocales = ['en', 'ru', 'uk'];
 const locales = new Locales(supportedLocales, navigator.languages);
 window.DD_LOGS && DD_LOGS.logger.debug(`Browser locales: [${navigator.languages}], using locale: ${locales.selectedLocale}`);
@@ -174,7 +177,7 @@ const onError = (error) => {
         onBusy(false);
         UIElements.streamError.innerText = locales.getTranslationByKey(error) || 'Wrong stream password';
     } else {
-        if (error.startsWith('ERROR:TIMEOUT')) webRTC.leaveStream(true);
+        webRTC.leaveStream(true);
         UIElements.streamError.innerText = (locales.getTranslationByKey('ERROR:UNSPECIFIED') || 'Something went wrong. Reload this page and try again.') + `\n[${error}]`;
         UIElements.streamJoinButton.style.display = 'none';
         UIElements.joinButtonLoader.style.display = 'none';
@@ -182,7 +185,7 @@ const onError = (error) => {
     UIElements.streamError.style.display = 'block';
 };
 
-const webRTC = new WebRTC(getTurnstileTokenAsync, onSocketConnect, onSocketDisconnect, onJoinStream, onShowStream, onHideStream, onLeaveStream, onError);
+const webRTC = new WebRTC(clientId, getTurnstileTokenAsync, onSocketConnect, onSocketDisconnect, onJoinStream, onShowStream, onHideStream, onLeaveStream, onError);
 
 document.getElementById('streamLeaveButton').addEventListener('click', (e) => {
     e.preventDefault();
@@ -209,10 +212,20 @@ UIElements.streamJoinButton.addEventListener('click', async (e) => {
         return;
     }
 
-    const buffer = await window.crypto.subtle.digest('SHA-384', new TextEncoder().encode(webRTC.clientId + streamId + password));
+    const buffer = await window.crypto.subtle.digest('SHA-384', new TextEncoder().encode(clientId + streamId + password));
     const passwordHash = window.btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\+/g, '-').replace(/\//g, '_');
     webRTC.joinStream(streamId, passwordHash, false);
 });
 
 window.onloadTurnstileCallback = () => { webRTC.waitForServerOnlineAndConnect(); };
 window.addEventListener('beforeunload', () => webRTC.leaveStream(true));
+
+function generateRandomString(length) {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+};

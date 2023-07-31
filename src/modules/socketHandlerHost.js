@@ -68,7 +68,7 @@ export default function (io, socket) {
             return;
         }
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: streamId, message: `Set as host for stream: ${streamId}` }));
+        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Set as host for stream: ${streamId}` }));
 
         socket.removeAllListeners('STREAM:REMOVE');
         socket.on('STREAM:REMOVE', removeStream);
@@ -82,8 +82,8 @@ export default function (io, socket) {
         socket.removeAllListeners('HOST:OFFER');
         socket.on('HOST:OFFER', hostOffer);
 
-        socket.removeAllListeners('HOST:CANDIDATES');
-        socket.on('HOST:CANDIDATES', hostCandidates);
+        socket.removeAllListeners('HOST:CANDIDATE');
+        socket.on('HOST:CANDIDATE', hostCandidate);
 
         socket.removeAllListeners('REMOVE:CLIENT');
         socket.on('REMOVE:CLIENT', removeClient);
@@ -111,7 +111,7 @@ export default function (io, socket) {
             return;
         }
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, message: `Removing stream Id: ${socket.data.streamId}` }));
+        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: `Removing stream Id: ${socket.data.streamId}` }));
 
         socket.to(socket.data.streamId).emit('REMOVE:STREAM'); //This is client only event, don't mix it with 'STREAM:REMOVE' from host
         io.socketsLeave(socket.data.streamId);
@@ -134,7 +134,7 @@ export default function (io, socket) {
     const startStream = async (payload, callback) => {
         const event = '[STREAM:START]';
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, payload, message: 'Stream start request' }));
+        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, message: 'Stream start request' }));
 
         if (!payload || !payload.clientId) {
             console.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_CLIENT_ID_SET', message: 'Bad stream start request' }));
@@ -156,7 +156,7 @@ export default function (io, socket) {
             const clientSocket = socketsInStream.find(item => item.data && item.data.clientId === payload.clientId);
 
             if (!clientSocket) {
-                console.warn(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
+                console.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
 
                 callback({ status: 'ERROR:NO_CLIENT_FOUND' });
                 return;
@@ -169,7 +169,7 @@ export default function (io, socket) {
                 return;
             }
 
-            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
+            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
             clientSocket.emit('STREAM:START');
         }
@@ -199,7 +199,7 @@ export default function (io, socket) {
         const event = '[HOST:OFFER]';
 
         if (!payload || !payload.clientId || !payload.offer) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad host offer request' }));
+            console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad host offer request' }));
             callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
             return;
         }
@@ -214,7 +214,7 @@ export default function (io, socket) {
         const clientSocket = socketsInStream.find(item => item.data && item.data.clientId === payload.clientId);
 
         if (!clientSocket) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
+            console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
             callback({ status: 'ERROR:NO_CLIENT_FOUND' });
             return;
         }
@@ -226,26 +226,26 @@ export default function (io, socket) {
             return;
         }
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
+        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
         clientSocket.emit('HOST:OFFER', { offer: payload.offer }, response => {
-            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:OFFER Client response: ${response.status}` }));
+            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:OFFER Client response: ${response.status}` }));
 
             callback({ status: response.status });
 
             if (response.status !== 'OK') {
-                console.error(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: 'Client error for HOST:OFFER' }));
+                console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: 'Client error for HOST:OFFER' }));
             }
         });
     }
 
-    // [HOST:CANDIDATES] ========================================================================================================
+    // [HOST:CANDIDATE] ========================================================================================================
 
-    const hostCandidates = async (payload, callback) => {
-        const event = '[HOST:CANDIDATES]';
+    const hostCandidate = async (payload, callback) => {
+        const event = '[HOST:CANDIDATE]';
 
-        if (!payload || !payload.clientId || !payload.candidates || !Array.isArray(payload.candidates)) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad host candidates request' }));
+        if (!payload || !payload.clientId || !payload.candidate) {
+            console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad host candidates request' }));
             callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
             return;
         }
@@ -271,15 +271,15 @@ export default function (io, socket) {
             return;
         }
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
+        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
-        clientSocket.emit('HOST:CANDIDATES', { candidates: payload.candidates }, response => {
-            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, message: `HOST:CANDIDATES Client response: ${response.status}` }));
+        clientSocket.emit('HOST:CANDIDATE', { candidate: payload.candidate }, response => {
+            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:CANDIDATE Client response: ${response.status}` }));
 
             callback({ status: response.status });
 
             if (response.status !== 'OK') {
-                console.error(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: 'Client error for HOST:CANDIDATES' }));
+                console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: 'Client error for HOST:CANDIDATE' }));
             }
         });
     }
@@ -290,7 +290,7 @@ export default function (io, socket) {
         const event = '[REMOVE:CLIENT]';
 
         if (!payload || !payload.clientId || !Array.isArray(payload.clientId)) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad remove client request' }));
+            console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad remove client request' }));
             callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
             return;
         }
@@ -299,19 +299,19 @@ export default function (io, socket) {
         const clientSockets = allSockets.filter(item => item.data && item.data.isClient === true && payload.clientId.includes(item.data.clientId));
 
         if (clientSockets.length === 0) {
-            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, message: 'No client found' }));
+            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: 'No client found' }));
             callback({ status: 'OK' });
             return;
         }
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, message: `Disconnecting clients: ${clientSockets.length}` }));
+        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: `Disconnecting clients: ${clientSockets.length}` }));
 
         clientSockets.forEach(clientSocket => {
             if (clientSocket.connected) {
                 clientSocket.rooms.forEach(room => { if (room != clientSocket.id) clientSocket.leave(room); });
 
                 clientSocket.emit('REMOVE:CLIENT', response => {
-                    console.debug(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: clientSocket.data.clientId, client_socket: clientSocket.id, message: `STREAM:LEAVE Client response: ${response.status}` }));
+                    console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: clientSocket.data.clientId, client_socket: clientSocket.id, message: `STREAM:LEAVE Client response: ${response.status}` }));
                 });
             }
         });

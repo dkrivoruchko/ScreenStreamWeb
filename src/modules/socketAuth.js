@@ -1,5 +1,5 @@
 import https from 'https';
-import { isValidNonce, NONCE_MIN_WAIT_TIMEOUT } from './nonceHandler.js';
+import { isValidNonce } from './nonceHandler.js';
 import { GoogleToken } from 'gtoken';
 
 const ANDROID_APP_PACKAGE = process.env.ANDROID_APP_PACKAGE;
@@ -9,6 +9,8 @@ const GOOGLE_SERVICE_ACCOUNT_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_KEY.split(
 
 const SERVER_ORIGIN = process.env.SERVER_ORIGIN;
 const TURNSTYLE_SECRET_KEY = process.env.TURNSTYLE_SECRET_KEY;
+
+const HOST_TOKEN_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
 // https://github.com/googleapis/node-gtoken
 const gtoken = new GoogleToken({
@@ -26,6 +28,8 @@ export default async function (socket, next) {
     if (!hostToken && !clientToken) throw new Error('NO_TOKEN_FOUND');
 
     if (clientToken) {
+      console.debug(JSON.stringify({ socket: socket.id, message: clientToken }));
+
       const data = JSON.stringify({ 'secret': TURNSTYLE_SECRET_KEY, 'response': clientToken });
 
       const options = {
@@ -68,6 +72,8 @@ export default async function (socket, next) {
       const tokenPayload = await doRequest(options, data);
       const payload = tokenPayload.tokenPayloadExternal;
 
+      console.debug(JSON.stringify({ socket: socket.id, message: payload }));
+
       if (!payload) throw new Error('EMPTY_PAYLOAD');
 
       // requestDetails
@@ -75,10 +81,11 @@ export default async function (socket, next) {
 
       if (payload.requestDetails.requestPackageName !== ANDROID_APP_PACKAGE) throw new Error(`REQUEST_DETAILS_WRONG_PACKAGE_NAME:${payload.appIntegrity.packageName}`);
 
-      const nonce = payload.requestDetails.nonce.replace('=', '');
-      if (!isValidNonce(nonce)) throw new Error('INVALID_NONCE');
+      const requestHash = payload.requestDetails.requestHash;
 
-      if (Date.now() - payload.requestDetails.timestampMillis > NONCE_MIN_WAIT_TIMEOUT) throw new Error('TOKEN_EXPIRED');
+      if (!isValidNonce(requestHash)) throw new Error('INVALID_NONCE');
+
+      if (Date.now() - payload.requestDetails.timestampMillis > HOST_TOKEN_TIMEOUT) throw new Error('TOKEN_EXPIRED');
 
       // appIntegrity
       if (!payload.appIntegrity) throw new Error('EMPTY_APP_INTEGRITY');

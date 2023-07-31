@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <link rel="icon" type="image/x-icon" sizes="any" href="/favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="stylesheet" href="/index.css">
@@ -17,19 +17,16 @@
       DD_LOGS.init({
         clientToken: "pub26fc6543f9239240ed8ae545593f921f",
         site: "datadoghq.com",
-        forwardErrorsToLogs: true,
         forwardConsoleLogs: "all",
-        sampleRate: 100,
-        service: "screenstream-dev",
-      })
-    window.DD_LOGS && DD_LOGS.logger.setHandler(["http", "console"]) 
+        service: `WebClient${window.location.host == "screenstream.io" ? "-PROD" : "-DEV"}`,
+      });
+    window.DD_LOGS && DD_LOGS.logger.setHandler(["http", "console"]);
   </script>
 
   <script src="https://cdn.socket.io/4.7.1/socket.io.min.js" crossorigin="anonymous"></script>
   <script>
     const getTurnstileTokenAsync = function (clientId) {
       window.DD_LOGS && DD_LOGS.logger.debug(`getTurnstileTokenAsync: clientId=${clientId}`);
-      window.DD_LOGS && DD_LOGS.setGlobalContextProperty("clientId", clientId);
 
       return new Promise((resolve, reject) => {
         const turnstileWidgetId = window.turnstile.render("#turnstile-container", {
@@ -127,7 +124,7 @@
   </div>
 
   <div id="video-container" style="display: none;">
-    <video id="video-element" autoplay playsinline controls></video>
+    <video id="video-element" muted autoplay playsinline controls></video>
   </div>
 
   <script src="/bg.js"></script>
