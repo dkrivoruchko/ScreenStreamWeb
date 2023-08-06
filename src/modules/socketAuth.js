@@ -1,3 +1,4 @@
+import logger from '../logger.js';
 import https from 'https';
 import { isValidNonce } from './nonceHandler.js';
 import { GoogleToken } from 'gtoken';
@@ -28,7 +29,7 @@ export default async function (socket, next) {
     if (!hostToken && !clientToken) throw new Error('NO_TOKEN_FOUND');
 
     if (clientToken) {
-      console.debug(JSON.stringify({ socket: socket.id, message: clientToken }));
+      logger.debug(JSON.stringify({ socket: socket.id, message: clientToken }));
 
       const data = JSON.stringify({ 'secret': TURNSTYLE_SECRET_KEY, 'response': clientToken });
 
@@ -72,8 +73,6 @@ export default async function (socket, next) {
       const tokenPayload = await doRequest(options, data);
       const payload = tokenPayload.tokenPayloadExternal;
 
-      console.debug(JSON.stringify({ socket: socket.id, message: payload }));
-
       if (!payload) throw new Error('EMPTY_PAYLOAD');
 
       // requestDetails
@@ -87,28 +86,33 @@ export default async function (socket, next) {
 
       if (Date.now() - payload.requestDetails.timestampMillis > HOST_TOKEN_TIMEOUT) throw new Error('TOKEN_EXPIRED');
 
-      // appIntegrity
-      if (!payload.appIntegrity) throw new Error('EMPTY_APP_INTEGRITY');
+      try {
 
-      if (ANDROID_APP_PACKAGE.endsWith('.dev')) { // Dev build
-        if (payload.appIntegrity.appRecognitionVerdict !== 'UNRECOGNIZED_VERSION') throw new Error(`WRONG_APP_VERDICT:${payload.appIntegrity.appRecognitionVerdict}`);
-      } else {
-        if (payload.appIntegrity.appRecognitionVerdict !== 'PLAY_RECOGNIZED') throw new Error(`WRONG_APP_VERDICT:${payload.appIntegrity.appRecognitionVerdict}`);
+        // deviceIntegrity
+        if (!payload.deviceIntegrity) throw new Error('EMPTY_DEVICE_INTEGRITY');
+
+        if (!payload.deviceIntegrity.deviceRecognitionVerdict.includes('MEETS_DEVICE_INTEGRITY')) throw new Error(`FAIL_DEVICE_INTEGRITY:${JSON.stringify(payload.deviceIntegrity.deviceRecognitionVerdict)}`);
+
+        // accountDetails 
+        // Don't check for now
+
+        // appIntegrity
+        if (!payload.appIntegrity) throw new Error('EMPTY_APP_INTEGRITY');
+
+        if (ANDROID_APP_PACKAGE.endsWith('.dev')) { // Dev build
+          if (payload.appIntegrity.appRecognitionVerdict !== 'UNRECOGNIZED_VERSION') throw new Error(`WRONG_APP_VERDICT:${payload.appIntegrity.appRecognitionVerdict}`);
+        } else {
+          if (payload.appIntegrity.appRecognitionVerdict !== 'PLAY_RECOGNIZED') throw new Error(`WRONG_APP_VERDICT:${payload.appIntegrity.appRecognitionVerdict}`);
+        }
+
+        if (payload.appIntegrity.packageName !== ANDROID_APP_PACKAGE) throw new Error(`APP_INTEGRITY_WRONG_PACKAGE_NAME:${payload.appIntegrity.packageName}`);
+
+        if (!payload.appIntegrity.certificateSha256Digest.includes(ANDROID_APP_CERT256)) throw new Error('APP_INTEGRITY_WRONG_DIGEST');
+
+        // Don't check for now tokenPayload.appIntegrity.versionCode
+      } catch (error) {
+        logger.error(JSON.stringify({ socket: socket.id, error: `ERROR:TOKEN_VERIFICATION_FAILED:${error.message}`, message: payload }));
       }
-
-      if (payload.appIntegrity.packageName !== ANDROID_APP_PACKAGE) throw new Error(`APP_INTEGRITY_WRONG_PACKAGE_NAME:${payload.appIntegrity.packageName}`);
-
-      if (!payload.appIntegrity.certificateSha256Digest.includes(ANDROID_APP_CERT256)) throw new Error('APP_INTEGRITY_WRONG_DIGEST');
-
-      // Don't check for now tokenPayload.appIntegrity.versionCode
-
-      // deviceIntegrity
-      if (!payload.deviceIntegrity) throw new Error('EMPTY_DEVICE_INTEGRITY');
-
-      if (!payload.deviceIntegrity.deviceRecognitionVerdict.includes('MEETS_DEVICE_INTEGRITY')) throw new Error(`FAIL_DEVICE_INTEGRITY:${JSON.stringify(payload.deviceIntegrity.deviceRecognitionVerdict)}`);
-
-      // accountDetails 
-      // Don't check for now
 
       socket.data.isHost = true;
       socket.data.isClient = false;
@@ -117,7 +121,7 @@ export default async function (socket, next) {
     }
 
   } catch (cause) {
-    console.error(JSON.stringify({ socket: socket.id, error: 'TOKEN_VERIFICATION_FAILED', client_address: socket.request.connection.remoteAddress, message: cause.message }));
+    logger.warn(JSON.stringify({ socket: socket.id, error: 'ERROR:TOKEN_VERIFICATION_FAILED', message: cause.message }));
     next(new Error(`ERROR:TOKEN_VERIFICATION_FAILED:${cause.message}`));
   }
 

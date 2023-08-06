@@ -1,6 +1,7 @@
 // Create and manage nonce for Google Play Integrity API https://developer.android.com/google/play/integrity
 // Used to validate Android app requests
 
+import logger from '../logger.js';
 import { randomBytes } from 'crypto';
 
 const NONCE_MIN_WAIT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
@@ -31,7 +32,7 @@ export function isValidNonce(nonce) {
 function cleanNonces() {
     let removed = 0;
     nonces.forEach((value, key, map) => { if (value <= Date.now()) { map.delete(key); removed++; } });
-    console.debug(`Nonces total: ${nonces.size}, cleaned: ${removed}`);
+    logger.debug(`Nonces total: ${nonces.size}, cleaned: ${removed}`);
     setTimeout(cleanNonces, NONCES_CLEAN_TASK_PERIOD);
 }
 

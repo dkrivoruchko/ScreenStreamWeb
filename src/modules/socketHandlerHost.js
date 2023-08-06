@@ -1,3 +1,4 @@
+import logger from '../logger.js';
 import * as jose from 'jose';
 import { isStreamIdValid, createNewStreamId } from './stream.js';
 
@@ -11,16 +12,16 @@ export default function (io, socket) {
     const createStream = async (payload, callback) => {
         const event = '[STREAM:CREATE]';
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, payload, message: 'New stream create request' }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, payload, message: 'New stream create request' }));
 
         if (!payload || !payload.jwt) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_JWT_SET', message: 'Bad stream create request' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_JWT_SET', message: 'Bad stream create request' }));
             callback({ status: 'ERROR:NO_JWT_SET' });
             return;
         }
 
         if (socket.data.streamId) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'STREAM_ID_ALREADY_SET', message: 'Bad stream state' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'STREAM_ID_ALREADY_SET', message: 'Bad stream state' }));
             callback({ status: 'ERROR:STREAM_ID_ALREADY_SET' });
             return;
         }
@@ -41,7 +42,7 @@ export default function (io, socket) {
             if (!verifyResult.payload.pubKey || typeof verifyResult.payload.pubKey !== 'string' || verifyResult.payload.pubKey.trim().length === 0) throw Error('BAD_PUB_KEY');
             pubKey = verifyResult.payload.pubKey;
         } catch (cause) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'JWT_VERIFICATION_FILED', message: cause.message, cause }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'JWT_VERIFICATION_FILED', message: cause.message, cause }));
             callback({ status: 'ERROR:JWT_VERIFICATION_FILED' });
             return;
         }
@@ -52,7 +53,7 @@ export default function (io, socket) {
             const existingHostSockets = socketsInRequestedStream.filter(item => item.data && item.data.isHost === true);
 
             if (existingHostSockets.length > 1) { // This is very bad
-                console.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TOO_MANY_HOSTS', message: `${existingHostSockets.map(s => s.id)}` }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TOO_MANY_HOSTS', message: `${existingHostSockets.map(s => s.id)}` }));
                 streamId = createNewStreamId(io);
             } else if (existingHostSockets.length === 1) {
                 if (existingHostSockets[0].data.pubKey === pubKey) streamId = requestedStreamId; else streamId = createNewStreamId(io);
@@ -64,11 +65,11 @@ export default function (io, socket) {
         }
 
         if (!socket.connected) {
-            console.warn(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Socket not connected. Ignoring.' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Socket not connected. Ignoring.' }));
             return;
         }
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Set as host for stream: ${streamId}` }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Set as host for stream: ${streamId}` }));
 
         socket.removeAllListeners('STREAM:REMOVE');
         socket.on('STREAM:REMOVE', removeStream);
@@ -103,15 +104,15 @@ export default function (io, socket) {
     const removeStream = (callback) => {
         const event = '[STREAM:REMOVE]';
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, message: 'New stream remove request' }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, message: 'New stream remove request' }));
 
         if (!socket.data.streamId) { //its ok, just ignore and notify host
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'STREAM_ID_NOT_SET', message: 'Bad stream state' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'STREAM_ID_NOT_SET', message: 'Bad stream state' }));
             callback({ status: 'ERROR:STREAM_ID_NOT_SET' });
             return;
         }
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: `Removing stream Id: ${socket.data.streamId}` }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: `Removing stream Id: ${socket.data.streamId}` }));
 
         socket.to(socket.data.streamId).emit('REMOVE:STREAM'); //This is client only event, don't mix it with 'STREAM:REMOVE' from host
         io.socketsLeave(socket.data.streamId);
@@ -134,16 +135,16 @@ export default function (io, socket) {
     const startStream = async (payload, callback) => {
         const event = '[STREAM:START]';
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, message: 'Stream start request' }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, message: 'Stream start request' }));
 
         if (!payload || !payload.clientId) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_CLIENT_ID_SET', message: 'Bad stream start request' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_CLIENT_ID_SET', message: 'Bad stream start request' }));
             callback({ status: 'ERROR:NO_CLIENT_ID_SET' });
             return;
         }
 
         if (!socket.data.streamId) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_STREAM_ID_SET', message: 'Bad stream state' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_STREAM_ID_SET', message: 'Bad stream state' }));
             callback({ status: 'ERROR:NO_STREAM_ID_SET' });
             return;
         }
@@ -156,7 +157,7 @@ export default function (io, socket) {
             const clientSocket = socketsInStream.find(item => item.data && item.data.clientId === payload.clientId);
 
             if (!clientSocket) {
-                console.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
 
                 callback({ status: 'ERROR:NO_CLIENT_FOUND' });
                 return;
@@ -165,11 +166,11 @@ export default function (io, socket) {
             callback({ status: 'OK' });
 
             if (!clientSocket.connected) {
-                console.warn(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Client socket not connected. Ignoring.' }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Client socket not connected. Ignoring.' }));
                 return;
             }
 
-            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
+            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
             clientSocket.emit('STREAM:START');
         }
@@ -180,10 +181,10 @@ export default function (io, socket) {
     const stopStream = (callback) => {
         const event = '[STREAM:STOP]';
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Stream stop request' }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Stream stop request' }));
 
         if (!socket.data.streamId) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_STREAM_ID_SET', message: 'Bad stream state' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_STREAM_ID_SET', message: 'Bad stream state' }));
             callback({ status: 'ERROR:NO_STREAM_ID_SET' });
             return;
         }
@@ -199,13 +200,13 @@ export default function (io, socket) {
         const event = '[HOST:OFFER]';
 
         if (!payload || !payload.clientId || !payload.offer) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad host offer request' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad host offer request' }));
             callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
             return;
         }
 
         if (!socket.data.streamId) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_STREAM_ID_SET', message: 'Bad stream state' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_STREAM_ID_SET', message: 'Bad stream state' }));
             callback({ status: 'ERROR:NO_STREAM_ID_SET' });
             return;
         }
@@ -214,27 +215,27 @@ export default function (io, socket) {
         const clientSocket = socketsInStream.find(item => item.data && item.data.clientId === payload.clientId);
 
         if (!clientSocket) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
             callback({ status: 'ERROR:NO_CLIENT_FOUND' });
             return;
         }
 
 
         if (!clientSocket.connected) {
-            console.warn(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Client socket not connected. Ignoring.' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Client socket not connected. Ignoring.' }));
             callback({ status: 'ERROR:NO_CLIENT_FOUND' });
             return;
         }
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
         clientSocket.emit('HOST:OFFER', { offer: payload.offer }, response => {
-            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:OFFER Client response: ${response.status}` }));
+            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:OFFER Client response: ${response.status}` }));
 
             callback({ status: response.status });
 
             if (response.status !== 'OK') {
-                console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: 'Client error for HOST:OFFER' }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: `Client error for HOST:OFFER => ${response.status}` }));
             }
         });
     }
@@ -245,13 +246,13 @@ export default function (io, socket) {
         const event = '[HOST:CANDIDATE]';
 
         if (!payload || !payload.clientId || !payload.candidate) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad host candidates request' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad host candidates request' }));
             callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
             return;
         }
 
         if (!socket.data.streamId) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_STREAM_ID_SET', message: 'Bad stream state' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_STREAM_ID_SET', message: 'Bad stream state' }));
             callback({ status: 'ERROR:NO_STREAM_ID_SET' });
             return;
         }
@@ -260,26 +261,26 @@ export default function (io, socket) {
         const clientSocket = socketsInStream.find(item => item.data && item.data.clientId === payload.clientId);
 
         if (!clientSocket) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
             callback({ status: 'ERROR:NO_CLIENT_FOUND' });
             return;
         }
 
         if (!clientSocket.connected) {
-            console.warn(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Client socket not connected. Ignoring.' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Client socket not connected. Ignoring.' }));
             callback({ status: 'ERROR:NO_CLIENT_FOUND' });
             return;
         }
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
         clientSocket.emit('HOST:CANDIDATE', { candidate: payload.candidate }, response => {
-            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:CANDIDATE Client response: ${response.status}` }));
+            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:CANDIDATE Client response: ${response.status}` }));
 
             callback({ status: response.status });
 
             if (response.status !== 'OK') {
-                console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: 'Client error for HOST:CANDIDATE' }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: `Client error for HOST:CANDIDATE => ${response.status}` }));
             }
         });
     }
@@ -290,7 +291,7 @@ export default function (io, socket) {
         const event = '[REMOVE:CLIENT]';
 
         if (!payload || !payload.clientId || !Array.isArray(payload.clientId)) {
-            console.error(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad remove client request' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad remove client request' }));
             callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
             return;
         }
@@ -299,19 +300,19 @@ export default function (io, socket) {
         const clientSockets = allSockets.filter(item => item.data && item.data.isClient === true && payload.clientId.includes(item.data.clientId));
 
         if (clientSockets.length === 0) {
-            console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: 'No client found' }));
+            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: 'No client found' }));
             callback({ status: 'OK' });
             return;
         }
 
-        console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: `Disconnecting clients: ${clientSockets.length}` }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: `Disconnecting clients: ${clientSockets.length}` }));
 
         clientSockets.forEach(clientSocket => {
             if (clientSocket.connected) {
                 clientSocket.rooms.forEach(room => { if (room != clientSocket.id) clientSocket.leave(room); });
 
                 clientSocket.emit('REMOVE:CLIENT', response => {
-                    console.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: clientSocket.data.clientId, client_socket: clientSocket.id, message: `STREAM:LEAVE Client response: ${response.status}` }));
+                    logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: clientSocket.data.clientId, client_socket: clientSocket.id, message: `STREAM:LEAVE Client response: ${response.status}` }));
                 });
             }
         });

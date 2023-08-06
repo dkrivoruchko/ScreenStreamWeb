@@ -61,7 +61,7 @@ export class WebRTC {
         this.#socketConnectCounter += 1;
 
         if (this.#socketConnectCounter >= 5) {
-            window.DD_LOGS && DD_LOGS.logger.error(`WebRTC: connectSocket: failed after [${this.#socketConnectCounter}] attempts. Give up.`);
+            window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC: connectSocket: failed after [${this.#socketConnectCounter}] attempts. Give up.`);
             this.#socketConnectCounter = 0;
             this.#onError('WEBRTC_ERROR:SOCKET_CONNECT_FAILED');
             return;
@@ -91,7 +91,7 @@ export class WebRTC {
         });
 
         this.#socket.on('connect_error', (error) => {
-            window.DD_LOGS && DD_LOGS.logger.error('WebRTC: connect_error: ' + error.message, { error });
+            window.DD_LOGS && DD_LOGS.logger.warn('WebRTC: connect_error: ' + error.message, { error });
 
             if (this.#isJoinedToStream) this.leaveStream(false);
             this.#onError(error.status);
@@ -108,7 +108,7 @@ export class WebRTC {
         });
 
         this.#socket.on('SOCKET:ERROR', (error, callback) => { // Server always disconnects socket on this event
-            window.DD_LOGS && DD_LOGS.logger.error('WebRTC: SOCKET:ERROR: ' + error.status, { error: error.status });
+            window.DD_LOGS && DD_LOGS.logger.warn('WebRTC: SOCKET:ERROR: ' + error.status, { error: error.status });
 
             if (this.#isJoinedToStream) this.leaveStream(false);
             this.#onError(error.status);
@@ -142,7 +142,7 @@ export class WebRTC {
                 return;
             }
             if (!response || !response.status || response.status !== 'OK') {
-                window.DD_LOGS && DD_LOGS.logger.error(`WebRTC: Error: ${JSON.stringify(response)}`, { socket_event: '[STREAM:JOIN]', error: response });
+                window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC: Error: ${JSON.stringify(response)}`, { socket_event: '[STREAM:JOIN]', error: response });
 
                 if (!autoJoin || this.#autoJoinCounter >= 3) {
                     if (autoJoin) this.leaveStream(false);
@@ -190,7 +190,7 @@ export class WebRTC {
         window.DD_LOGS && DD_LOGS.logger.debug('WebRTC: startStream');
 
         if (this.#peerConnection) {
-            window.DD_LOGS && DD_LOGS.logger.console.warn('WebRTC: PeerConnection exist. Cleaning it first.');
+            window.DD_LOGS && DD_LOGS.logger.warn('WebRTC: PeerConnection exist. Cleaning it first.');
             this.#stopStream();
         }
 
@@ -221,7 +221,7 @@ export class WebRTC {
                         window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC: [CLIENT:CANDIDATE] timeout: ${err}`);
                         this.#onError('ERROR:TIMEOUT:CLIENT:CANDIDATE');
                     } else if (!response || !response.status || response.status !== 'OK') {
-                        window.DD_LOGS && DD_LOGS.logger.error(`WebRTC: Error: ${JSON.stringify(response)}`, { socket_event: '[CLIENT:CANDIDATE]', error: response });
+                        window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC: Error: ${JSON.stringify(response)}`, { socket_event: '[CLIENT:CANDIDATE]', error: response });
                         this.#onError('WEBRTC_ERROR:NEGOTIATION_ERROR:CLIENT_CANDIDATE');
                     } else {
                         window.DD_LOGS && DD_LOGS.logger.debug('WebRTC: [CLIENT:CANDIDATE] send OK', { socket_event: '[CLIENT:CANDIDATE]' });
@@ -235,7 +235,7 @@ export class WebRTC {
         this.#socket.on('HOST:CANDIDATE', (hostCandidate, callback) => {
             if (!hostCandidate || !hostCandidate.candidate) {
                 callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
-                window.DD_LOGS && DD_LOGS.logger.error('WebRTC: Error in host candidates', { socket_event: '[HOST:CANDIDATE]', error: 'ERROR:EMPTY_OR_BAD_DATA', hostCandidate: hostCandidate.candidate });
+                window.DD_LOGS && DD_LOGS.logger.warn('WebRTC: Error in host candidates', { socket_event: '[HOST:CANDIDATE]', error: 'ERROR:EMPTY_OR_BAD_DATA', hostCandidate: hostCandidate.candidate });
                 this.#onError('WEBRTC_ERROR:NEGOTIATION_ERROR:HOST_CANDIDATE');
                 return;
             }
@@ -252,7 +252,7 @@ export class WebRTC {
 
             if (!hostOffer || !hostOffer.offer) {
                 callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
-                window.DD_LOGS && DD_LOGS.logger.error('WebRTC: Error in host offer', { socket_event: '[HOST:OFFER]', error: 'ERROR:EMPTY_OR_BAD_DATA', offer: JSON.stringify(hostOffer) });
+                window.DD_LOGS && DD_LOGS.logger.warn('WebRTC: Error in host offer', { socket_event: '[HOST:OFFER]', error: 'ERROR:EMPTY_OR_BAD_DATA', offer: JSON.stringify(hostOffer) });
                 this.#onError('WEBRTC_ERROR:NEGOTIATION_ERROR:HOST_OFFER');
                 return;
             }
@@ -269,7 +269,7 @@ export class WebRTC {
                     window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC: [CLIENT:ANSWER] timeout: ${err}`);
                     this.#onError('ERROR:TIMEOUT:CLIENT:ANSWER');
                 } else if (!response || !response.status || response.status !== 'OK') {
-                    window.DD_LOGS && DD_LOGS.logger.error(`WebRTC: Error: ${JSON.stringify(response)}`, { socket_event: '[CLIENT:ANSWER]', error: response });
+                    window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC: Error: ${JSON.stringify(response)}`, { socket_event: '[CLIENT:ANSWER]', error: response });
                     this.#onError('WEBRTC_ERROR:NEGOTIATION_ERROR:CLIENT_ANSWER');
                 } else {
                     window.DD_LOGS && DD_LOGS.logger.debug('WebRTC: [CLIENT:ANSWER] send OK', { socket_event: '[CLIENT:ANSWER]' });
@@ -306,7 +306,7 @@ export class WebRTC {
             if (err) {
                 window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC: [STREAM:LEAVE] timeout: ${err}`);
             } else if (!response || !response.status || response.status !== 'OK') {
-                window.DD_LOGS && DD_LOGS.logger.error(`WebRTC: Error: ${JSON.stringify(response)}`, { socket_event: '[STREAM:LEAVE]', error: response });
+                window.DD_LOGS && DD_LOGS.logger.info(`WebRTC: Error: ${JSON.stringify(response)}`, { socket_event: '[STREAM:LEAVE]', error: response });
             } else {
                 window.DD_LOGS && DD_LOGS.logger.debug('WebRTC: [STREAM:LEAVE] send OK', { socket_event: '[STREAM:LEAVE]' });
             }

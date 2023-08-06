@@ -10,20 +10,20 @@
 
   <title>ScreenStream</title>
 
-  <script src="https://www.datadoghq-browser-agent.com/datadog-logs-v4.js" crossorigin="anonymous"></script>
-
+  <script type="text/javascript" src="https://www.datadoghq-browser-agent.com/us1/v4/datadog-logs.js" crossorigin="anonymous"></script>
   <script>
     window.DD_LOGS &&
       DD_LOGS.init({
         clientToken: "pub26fc6543f9239240ed8ae545593f921f",
         site: "datadoghq.com",
         forwardConsoleLogs: "all",
+        forwardReports: "all",
         service: `WebClient${window.location.host == "screenstream.io" ? "-PROD" : "-DEV"}`,
       });
     window.DD_LOGS && DD_LOGS.logger.setHandler(["http", "console"]);
   </script>
 
-  <script src="https://cdn.socket.io/4.7.1/socket.io.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
   <script>
     const getTurnstileTokenAsync = function (clientId) {
       window.DD_LOGS && DD_LOGS.logger.debug(`getTurnstileTokenAsync: clientId=${clientId}`);
@@ -43,8 +43,8 @@
       })
     };
   </script>
-  <script src="/main.js" type="module"></script>
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" defer></script>
+  <script src="/main.js" type="module" defer></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" crossorigin="anonymous" defer></script>
 </head>
 
 <body>

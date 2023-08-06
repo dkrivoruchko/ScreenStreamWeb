@@ -13,7 +13,7 @@ export class Locales {
             const response = await fetch(`/lang/${this.selectedLocale}.json`);
             this.#translations = await response.json();
         } catch (error) {
-            window.DD_LOGS && DD_LOGS.logger.error(`Locales: fetchTranslation for ${this.selectedLocale} failed: ${error.message}`, { error });
+            window.DD_LOGS && DD_LOGS.logger.warn(`Locales: fetchTranslation for ${this.selectedLocale} failed: ${error.message}`, { error });
         }
 
         if (this.selectedLocale != this.#defaultLocale) {
@@ -21,7 +21,7 @@ export class Locales {
                 const response = await fetch(`/lang/${this.#defaultLocale}.json`);
                 this.#defaultTranslations = await response.json();
             } catch (error) {
-                window.DD_LOGS && DD_LOGS.logger.error(`Locales: fetchDefaultTranslation for ${this.#defaultLocale} failed: ${error.message}`, { error });
+                window.DD_LOGS && DD_LOGS.logger.warn(`Locales: fetchDefaultTranslation for ${this.#defaultLocale} failed: ${error.message}`, { error });
             }
         }
     }

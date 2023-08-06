@@ -168,7 +168,7 @@ const onError = (error) => {
         return;
     }
 
-    window.DD_LOGS && DD_LOGS.logger.error(`onError: ${error}`, { error });
+    window.DD_LOGS && DD_LOGS.logger.warn(`onError: ${error}`, { error });
 
     if (error == 'ERROR:NO_STREAM_HOST_FOUND') {
         onBusy(false);
