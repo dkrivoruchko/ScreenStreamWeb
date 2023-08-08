@@ -11,7 +11,7 @@ const GOOGLE_SERVICE_ACCOUNT_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_KEY.split(
 const SERVER_ORIGIN = process.env.SERVER_ORIGIN;
 const TURNSTYLE_SECRET_KEY = process.env.TURNSTYLE_SECRET_KEY;
 
-const HOST_TOKEN_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+const HOST_TOKEN_TIMEOUT = 60 * 60 * 1000; // 60 minutes
 
 // https://github.com/googleapis/node-gtoken
 const gtoken = new GoogleToken({
