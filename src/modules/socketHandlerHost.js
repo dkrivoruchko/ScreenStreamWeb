@@ -230,6 +230,11 @@ export default function (io, socket) {
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
         clientSocket.emit('HOST:OFFER', { offer: payload.offer }, response => {
+            if (!socket.connected) {
+                logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, clientId: payload.clientId, client_socket: clientSocket.id, message: 'HOST:OFFER Host socket disconnected. Ignoring' }));
+                return;
+            }
+
             logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:OFFER Client response: ${response.status}` }));
 
             callback({ status: response.status });
@@ -275,6 +280,11 @@ export default function (io, socket) {
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
         clientSocket.emit('HOST:CANDIDATE', { candidate: payload.candidate }, response => {
+            if (!socket.connected) {
+                logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, clientId: payload.clientId, client_socket: clientSocket.id, message: 'HOST:CANDIDATE Host socket disconnected. Ignoring' }));
+                return;
+            }
+
             logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:CANDIDATE Client response: ${response.status}` }));
 
             callback({ status: response.status });
@@ -296,23 +306,24 @@ export default function (io, socket) {
             return;
         }
 
+        const streamId = socket.data.streamId;
         const allSockets = await io.fetchSockets();
         const clientSockets = allSockets.filter(item => item.data && item.data.isClient === true && payload.clientId.includes(item.data.clientId));
 
         if (clientSockets.length === 0) {
-            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: 'No client found' }));
+            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: 'No client found' }));
             callback({ status: 'OK' });
             return;
         }
 
-        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: `Disconnecting clients: ${clientSockets.length}` }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Disconnecting clients: ${clientSockets.length}` }));
 
         clientSockets.forEach(clientSocket => {
             if (clientSocket.connected) {
                 clientSocket.rooms.forEach(room => { if (room != clientSocket.id) clientSocket.leave(room); });
 
                 clientSocket.emit('REMOVE:CLIENT', response => {
-                    logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: clientSocket.data.clientId, client_socket: clientSocket.id, message: `STREAM:LEAVE Client response: ${response.status}` }));
+                    logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: clientSocket.data.clientId, client_socket: clientSocket.id, message: `STREAM:LEAVE Client response: ${response.status}` }));
                 });
             }
         });

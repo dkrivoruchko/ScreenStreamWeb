@@ -25,21 +25,21 @@
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
   <script>
-    const getTurnstileTokenAsync = function (clientId) {
+    window.getTurnstileTokenAsync = (clientId) => {
       window.DD_LOGS && DD_LOGS.logger.debug(`getTurnstileTokenAsync: clientId=${clientId}`);
 
       return new Promise((resolve, reject) => {
-        const turnstileWidgetId = window.turnstile.render("#turnstile-container", {
-          sitekey: "%TURNSTYLE_SITE_KEY%",
+        const turnstileWidgetId = window.turnstile.render('#turnstile-container', {
+          sitekey: '%TURNSTYLE_SITE_KEY%',
           cData: clientId,
           callback: function (token) {
-            window.DD_LOGS && DD_LOGS.logger.debug("Got turnstile token");
+            window.DD_LOGS && DD_LOGS.logger.debug('Got turnstile token');
             window.turnstile.remove(turnstileWidgetId);
             resolve(token);
           }
         });
 
-        if (turnstileWidgetId == undefined) reject(new Error("ERROR:TURNSTILE_ERROR"));
+        if (turnstileWidgetId == undefined) reject(new Error('ERROR:TURNSTILE_ERROR'));
       })
     };
   </script>
@@ -72,24 +72,25 @@
             </td>
           </tr>
           <tr>
-            <td colspan="2"><button id="streamJoinButton" type="submit" style="display: none;" data-i18n-key="stream-join">Join stream</button></td>
+            <td colspan="2" style="width:300px; height: 70px;">
+              <button id="streamJoinButton" type="submit" data-i18n-key="stream-join" style="display: none;">Join stream</button>
+              <div id="turnstile-container"></div>
+              <div class="loading" id="joinButtonLoader" style="display: none;">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
     </form>
-    <br>
-    <div class="loading" id="joinButtonLoader" style="margin: 16px;">
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
-    <br>
+
     <div id="privacy" style="font-size: small; line-height: 150%; color: #aaa;" data-i18n-key="privacy-terms">By joining stream, you agree to<br><a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms and Conditions</a>.</div>
-    <div id="turnstile-container"></div>
   </div>
 
   <div id="stream-wait-container" style="display: none;">

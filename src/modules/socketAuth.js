@@ -19,7 +19,7 @@ const gtoken = new GoogleToken({
   scope: ['https://www.googleapis.com/auth/playintegrity'],
   key: GOOGLE_SERVICE_ACCOUNT_KEY,
   eagerRefreshThresholdMillis: 5 * 60 * 1000 // 5 minutes
-}); //todo ensure it's always valid
+});
 
 export default async function (socket, next) {
   try {
