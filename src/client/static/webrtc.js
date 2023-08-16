@@ -169,7 +169,7 @@ export class WebRTC {
                 return;
             }
             if (!response || !response.status || response.status !== 'OK') {
-                window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC.joinStream: [STREAM:JOIN] error: ${JSON.stringify(response)}`, { socket_event: '[STREAM:JOIN]', error: response });
+                window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC.joinStream ${streamId}: [STREAM:JOIN] error: ${JSON.stringify(response)}`, { socket_event: '[STREAM:JOIN]', error: response });
 
                 this.#streamState.isJoiningStream = false;
                 this.#streamState.error = response.status;
@@ -242,7 +242,7 @@ export class WebRTC {
                         window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.startStream: [CLIENT:CANDIDATE] timeout: ${err}`);
                         this.#streamState.error = 'ERROR:TIMEOUT:CLIENT:CANDIDATE';
                     } else if (!response || !response.status || response.status !== 'OK') {
-                        window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC.startStream: Error: ${JSON.stringify(response)}`, { socket_event: '[CLIENT:CANDIDATE]', error: response });
+                        window.DD_LOGS && DD_LOGS.logger.info(`WebRTC.startStream: Error: ${JSON.stringify(response)}`, { socket_event: '[CLIENT:CANDIDATE]', error: response });
                         this.#streamState.error = 'WEBRTC_ERROR:NEGOTIATION_ERROR:CLIENT_CANDIDATE';
                     } else {
                         window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.startStream: [CLIENT:CANDIDATE] send OK', { socket_event: '[CLIENT:CANDIDATE]' });
