@@ -53,10 +53,16 @@ export default function (io, socket) {
             const existingHostSockets = socketsInRequestedStream.filter(item => item.data && item.data.isHost === true);
 
             if (existingHostSockets.length > 1) { // This is very bad
-                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TOO_MANY_HOSTS', message: `${existingHostSockets.map(s => s.id)}` }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TOO_MANY_HOSTS', message: `TOO_MANY_HOSTS: ${existingHostSockets.map(s => s.id)}` }));
                 streamId = createNewStreamId(io);
             } else if (existingHostSockets.length === 1) {
-                if (existingHostSockets[0].data.pubKey === pubKey) streamId = requestedStreamId; else streamId = createNewStreamId(io);
+                if (existingHostSockets[0].data.pubKey === pubKey) {
+                    streamId = requestedStreamId;
+                    logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Disconnecting previous host socket: ${existingHostSockets[0].id}` }));
+                    existingHostSockets[0].disconnect();
+                } else {
+                    streamId = createNewStreamId(io);
+                }
             } else if (existingHostSockets.length === 0) {
                 streamId = requestedStreamId;
             }
@@ -181,13 +187,13 @@ export default function (io, socket) {
     const stopStream = (callback) => {
         const event = '[STREAM:STOP]';
 
-        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Stream stop request' }));
-
         if (!socket.data.streamId) {
             logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_STREAM_ID_SET', message: 'Bad stream state' }));
             callback({ status: 'ERROR:NO_STREAM_ID_SET' });
             return;
         }
+
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: 'Stream stop request' }));
 
         socket.to(socket.data.streamId).emit('STREAM:STOP');
 
@@ -266,7 +272,7 @@ export default function (io, socket) {
         const clientSocket = socketsInStream.find(item => item.data && item.data.clientId === payload.clientId);
 
         if (!clientSocket) {
-            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, stream_id: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, error: 'NO_CLIENT_FOUND', message: 'No client found' }));
             callback({ status: 'ERROR:NO_CLIENT_FOUND' });
             return;
         }
@@ -316,14 +322,14 @@ export default function (io, socket) {
             return;
         }
 
-        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Disconnecting clients: ${clientSockets.length}` }));
+        logger.w(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Disconnecting clients [${payload.reason}]: ${clientSockets.length}` }));
 
         clientSockets.forEach(clientSocket => {
             if (clientSocket.connected) {
                 clientSocket.rooms.forEach(room => { if (room != clientSocket.id) clientSocket.leave(room); });
 
                 clientSocket.emit('REMOVE:CLIENT', response => {
-                    logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: clientSocket.data.clientId, client_socket: clientSocket.id, message: `STREAM:LEAVE Client response: ${response.status}` }));
+                    logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: clientSocket.data.clientId, client_socket: clientSocket.id, message: `REMOVE:CLIENT Client response: ${response.status}` }));
                 });
             }
         });

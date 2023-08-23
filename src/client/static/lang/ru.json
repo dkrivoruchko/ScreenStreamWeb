@@ -8,6 +8,7 @@
     "stream-id-header": "Трансляция: {streamId}",
     "stream-leave": "Выйти из трансляции",
     "privacy-terms": "Присоединяясь к трансляции, вы соглашаетесь с <br><a href=\"/privacy.html\">Политикой конфиденциальности</a> и <a href=\"/terms.html\">Условиями использования</a>.",
+    "ERROR:WRONG_STREAM_ID": "Неверный идентификатор трансляции",
     "ERROR:NO_STREAM_HOST_FOUND": "Трансляция не найдена",
     "ERROR:WRONG_STREAM_PASSWORD": "Неверный пароль трансляции",
     "ERROR:UNSPECIFIED": "Что-то пошло не так. Перезагрузите страницу и попробуйте еще раз."

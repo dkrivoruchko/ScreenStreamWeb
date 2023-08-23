@@ -11,7 +11,8 @@ const UIElements = {
     streamJoinButton: document.getElementById('streamJoinButton'),
     joinButtonLoader: document.getElementById('joinButtonLoader'),
 
-    streamError: document.getElementById('stream-error'),
+    streamJoinCell: document.getElementById('stream-join'),
+    streamErrorCell: document.getElementById('stream-error'),
 
     streamWaitContainer: document.getElementById('stream-wait-container'),
     streamWaitContainerText: document.getElementById('stream-wait-container-text'),
@@ -75,6 +76,7 @@ const streamingContainerOnMouseOut = () => {
 };
 
 const onNewState = (key, oldValue, newValue, state) => {
+    if (newValue === oldValue) return;
     window.DD_LOGS && DD_LOGS.logger.debug(`onNewState: [${key}] ${oldValue} => ${newValue}\n${JSON.stringify(state)}`);
 
     if (key === 'error' && state.error) {
@@ -94,15 +96,18 @@ const onNewState = (key, oldValue, newValue, state) => {
 
     UIElements.streamJoinButton.style.display = (state.isSocketConnected && !state.isJoiningStream) ? 'table-cell' : 'none';
 
-    UIElements.streamError.style.display = (state.error) ? 'block' : 'none';
+    UIElements.streamErrorCell.style.display = (state.error) ? 'block' : 'none';
 
     if (state.error) {
-        if (state.error == 'ERROR:NO_STREAM_HOST_FOUND') {
-            UIElements.streamError.innerText = locales.getTranslationByKey(state.error) || 'Stream not found';
+        if (state.error == 'ERROR:WRONG_STREAM_ID') {
+            UIElements.streamErrorCell.innerText = locales.getTranslationByKey(state.error) || 'Wrong stream id';
+        } else if (state.error == 'ERROR:NO_STREAM_HOST_FOUND') {
+            UIElements.streamErrorCell.innerText = locales.getTranslationByKey(state.error) || 'Stream not found';
         } else if (state.error == 'ERROR:WRONG_STREAM_PASSWORD') {
-            UIElements.streamError.innerText = locales.getTranslationByKey(state.error) || 'Wrong stream password';
+            UIElements.streamErrorCell.innerText = locales.getTranslationByKey(state.error) || 'Wrong stream password';
         } else {
-            UIElements.streamError.innerText = (locales.getTranslationByKey('ERROR:UNSPECIFIED') || 'Something went wrong. Reload this page and try again.') + `\n[${state.error}]`;
+            UIElements.streamErrorCell.innerText = (locales.getTranslationByKey('ERROR:UNSPECIFIED') || 'Something went wrong. Reload this page and try again.') + `\n[${state.error}]\n\n`;
+            UIElements.streamJoinCell.style.display = 'none';
             UIElements.streamJoinButton.style.display = 'none';
             UIElements.joinButtonLoader.style.display = 'none';
         }
@@ -138,7 +143,7 @@ const onNewState = (key, oldValue, newValue, state) => {
 }
 
 const onNewTrack = (track) => {
-    window.DD_LOGS && DD_LOGS.logger.debug('onNewTrack:', { track_id: track.id });
+    window.DD_LOGS && DD_LOGS.logger.debug(`onNewTrack: ${track.id}`, { track_id: track.id });
 
     if (!UIElements.videoElement.srcObject) {
         UIElements.videoElement.srcObject = new MediaStream();

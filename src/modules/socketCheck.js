@@ -8,34 +8,34 @@ export default function (io, socket) {
         try {
 
             if (!socket.data || (socket.data.isClient !== true && socket.data.isHost !== true)) {
-                logger.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'UNVERIFIED_SOCKET', message: "Unverified socket. Disconnecting" }));
+                logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'UNVERIFIED_SOCKET', message: "Unverified socket. Disconnecting" }));
                 throw new Error('UNVERIFIED_SOCKET');
             }
 
             if (socket.data.isClient === true && socket.data.isHost === true) {
-                logger.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'INVALID_SOCKET_STATE', message: "Socket is host and client. Disconnecting" }));
+                logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'INVALID_SOCKET_STATE', message: "Socket is host and client. Disconnecting" }));
                 throw new Error('INVALID_SOCKET_STATE');
             }
 
             if (socket.data.isClient === true) {
                 if (!socket.data.clientId || typeof socket.data.clientId !== 'string' || socket.data.clientId.length === 0) {
-                    logger.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_CLIENT_ID', message: "Client id not set. Disconnecting" }));
+                    logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'NO_CLIENT_ID', message: "Client id not set. Disconnecting" }));
                     throw new Error('NO_CLIENT_ID');
                 }
 
                 if (!validClientEvents.includes(event)) {
-                    logger.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'UNKNOWN_CLIENT_EVENT', message: "Unknown client event. Disconnecting" }));
+                    logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'UNKNOWN_CLIENT_EVENT', message: "Unknown client event. Disconnecting" }));
                     throw new Error('UNKNOWN_CLIENT_EVENT');
                 }
 
                 if (socket.data.errorCounter > 8) {
-                    logger.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'ERROR_LIMIT_REACHED', message: "Client error limit reached. Disconnecting" }));
+                    logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'ERROR_LIMIT_REACHED', message: "Client error limit reached. Disconnecting" }));
                     throw new Error('ERROR_LIMIT_REACHED');
                 }
             }
 
             if (socket.data.isHost === true && !validHostEvents.includes(event)) {
-                logger.error(JSON.stringify({ socket_event: event, socket: socket.id, error: 'UNKNOWN_HOST_EVENT', message: "Unknown host event. Disconnecting" }));
+                logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'UNKNOWN_HOST_EVENT', message: "Unknown host event. Disconnecting" }));
                 throw new Error('UNKNOWN_HOST_EVENT');
             }
 

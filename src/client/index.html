@@ -19,7 +19,7 @@
         site: "datadoghq.com",
         forwardConsoleLogs: ["info", "warn", "error"],
         forwardReports: "all",
-        service: `WebClient${isPROD ? "-PROD" : "-DEV"}`,
+        service: "%DD_SERVICE%",
       });
     window.DD_LOGS && DD_LOGS.logger.setHandler(isPROD ? ["http"] : ["http", "console"]);
   </script>
@@ -33,14 +33,22 @@
         const turnstileWidgetId = window.turnstile.render('#turnstile-container', {
           sitekey: '%TURNSTYLE_SITE_KEY%',
           cData: clientId,
-          callback: function (token) {
+          callback: (token) => {
             window.DD_LOGS && DD_LOGS.logger.debug('Got turnstile token');
             window.turnstile.remove(turnstileWidgetId);
             resolve(token);
+          },
+          'error-callback': (error_code) => {
+            window.DD_LOGS && DD_LOGS.logger.error(`Turnstile error: ${error_code}`, { error: error_code });
+            reject(new Error(`ERROR:TURNSTILE_ERROR:${error_code}`));
+            return false;
+          },
+          'expired-callback': () => {
+            window.DD_LOGS && DD_LOGS.logger.warn(`Turnstile expired`);
+            reject(new Error('ERROR:TURNSTILE_EXPIRED'));
+            return false;
           }
         });
-
-        if (turnstileWidgetId == undefined) reject(new Error('ERROR:TURNSTILE_ERROR'));
       })
     };
   </script>
@@ -69,11 +77,11 @@
           </tr>
           <tr>
             <td colspan="2">
-              <div id="stream-error" style="display: none;"></div>
+              <div id="stream-error" style="display: none; word-break: break-word;"></div>
             </td>
           </tr>
           <tr>
-            <td colspan="2" style="width:300px; height: 70px;">
+            <td id="stream-join" colspan="2" style="width:300px; height: 70px;">
               <button id="streamJoinButton" type="submit" data-i18n-key="stream-join" style="display: none;">Join stream</button>
               <div id="turnstile-container"></div>
               <div class="loading" id="joinButtonLoader" style="display: none;">

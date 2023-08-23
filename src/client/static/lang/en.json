@@ -8,6 +8,7 @@
     "stream-id-header": "Stream Id: {streamId}",
     "stream-leave": "Leave stream",
     "privacy-terms": "By joining stream, you agree to<br><a href=\"/privacy.html\">Privacy Policy</a> and <a href=\"/terms.html\">Terms and Conditions</a>.",
+    "ERROR:WRONG_STREAM_ID": "Wrong stream id",
     "ERROR:NO_STREAM_HOST_FOUND": "Stream not found",
     "ERROR:WRONG_STREAM_PASSWORD": "Wrong stream password",
     "ERROR:UNSPECIFIED": "Something went wrong. Reload this page and try again."

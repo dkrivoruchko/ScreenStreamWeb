@@ -86,7 +86,7 @@ export default async function (socket, next) {
       if (!isValidNonce(requestHash)) throw new Error('INVALID_NONCE');
 
       const timeout = Date.now() - payload.requestDetails.timestampMillis;
-      if (timeout > HOST_TOKEN_TIMEOUT) throw new Error(`TOKEN_EXPIRED:${timeout / 60000}`);
+      if (timeout > HOST_TOKEN_TIMEOUT) throw new Error(`TOKEN_EXPIRED:${Math.trunc(timeout / 60000)}`);
 
       try {
         // deviceIntegrity

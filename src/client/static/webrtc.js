@@ -39,7 +39,7 @@ export class WebRTC {
         window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.isServerOnline');
         try {
             const response = await fetch('/app/ping');
-            return response.ok;
+            return response.status === 204;
         } catch (ignore) {
             return false;
         }
@@ -101,7 +101,7 @@ export class WebRTC {
         });
 
         this.#socket.on('connect_error', (error) => {
-            window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC.connectSocket: [connect_error] => ${error.message}`, { error });
+            window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC.connectSocket: [connect_error] => ${error.message}`, { error: error.message });
 
             this.#socket = null;
             this.#streamState.isSocketConnected = false;
@@ -113,7 +113,7 @@ export class WebRTC {
             //ERROR:TOKEN_VERIFICATION_FAILED:TURNSTYLE_INVALID_TOKEN:${outcome['error-codes']}
             //ERROR:TOKEN_VERIFICATION_FAILED:TURNSTYLE_INVALID_HOSTNAME:${outcome.hostname}
             //ERROR:TOKEN_VERIFICATION_FAILED:TURNSTYLE_INVALID_CLIENT_ID:${outcome.cdata}
-            this.#streamState.error = error.status;
+            this.#streamState.error = error.message;
         });
 
         this.#socket.on('SOCKET:ERROR', (error, callback) => {
@@ -138,8 +138,8 @@ export class WebRTC {
         this.#streamState.error = null;
 
         if (!isStreamIdValid(streamId)) {
-            window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC.joinStream: Bad stream id: '${streamId}'`, { stream_id: streamId });
-            this.#streamState.error = 'ERROR:NO_STREAM_HOST_FOUND';
+            window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC.joinStream: Bad stream id: '${streamId}'`, { streamId });
+            this.#streamState.error = 'ERROR:WRONG_STREAM_ID';
             return;
         }
 
@@ -155,7 +155,7 @@ export class WebRTC {
             return;
         }
 
-        window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.joinStream: ${streamId}`, { stream_id: streamId });
+        window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.joinStream: ${streamId}`, { streamId });
         this.#streamState.isJoiningStream = true;
 
         const buffer = await window.crypto.subtle.digest('SHA-384', new TextEncoder().encode(this.#clientId + streamId + password));
@@ -213,9 +213,8 @@ export class WebRTC {
         }
 
         this.#peerConnection = new RTCPeerConnection({
-            bundlePolicy: 'max-bundle',
-            iceCandidatePoolSize: 8,
-            iceServers: [{ urls: this.#iceServers.sort(() => .5 - Math.random()).slice(0, 3) }],
+            bundlePolicy: 'balanced',
+            iceServers: [{ urls: this.#iceServers.sort(() => .5 - Math.random()).slice(0, 2) }],
         });
 
         this.#hostOfferTimeout = setTimeout(() => {
@@ -225,7 +224,7 @@ export class WebRTC {
 
         this.#peerConnection.onconnectionstatechange = (event) => {
             if (this.#peerConnection.connectionState === 'disconnected') {
-                window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.startStream: PeerConnection state change to "disconnected". Stopping stream.');
+                window.DD_LOGS && DD_LOGS.logger.warn('WebRTC.startStream: PeerConnection state change to "disconnected". Stopping stream.');
                 this.leaveStream(true);
             }
         }
@@ -326,7 +325,7 @@ export class WebRTC {
             if (err) {
                 window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.leaveStream: [STREAM:LEAVE] timeout: ${err}`);
             } else if (!response || !response.status || response.status !== 'OK') {
-                window.DD_LOGS && DD_LOGS.logger.info(`WebRTC.leaveStream: Error: ${JSON.stringify(response)}`, { socket_event: '[STREAM:LEAVE]', error: response });
+                window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC.leaveStream: Error: ${JSON.stringify(response)}`, { socket_event: '[STREAM:LEAVE]', error: response });
             } else {
                 window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.leaveStream: [STREAM:LEAVE] send OK', { socket_event: '[STREAM:LEAVE]' });
             }

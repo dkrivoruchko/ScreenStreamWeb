@@ -237,7 +237,7 @@ export default function (io, socket) {
 
         const streamId = getStreamId(socket)
         if (!streamId) {
-            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, clientId: socket.data.clientId, message: 'No stream joined. Ignoring.' }));
+            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, clientId: socket.data.clientId, message: 'No stream joined. Ignoring.' }));
             callback({ status: 'ERROR:NO_STREAM_JOINED' });
             return;
         }
