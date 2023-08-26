@@ -1,0 +1,15 @@
+{
+    "header-welcome": "ScreenStream에 오신 것을 환영합니다",
+    "stream-message": "스트림을 보려면 스트림 ID와 암호를 입력하세요",
+    "stream-id": "스트림 ID:",
+    "stream-password": "스트림 비밀번호:",
+    "stream-waiting": "호스트가 스트림을 시작할 때까지 대기 중입니다",
+    "stream-join": "스트림 참여",
+    "stream-id-header": "스트림 ID: {streamId}",
+    "stream-leave": "스트림 나가기",
+    "privacy-terms": "스트림에 참여함으로써 <a href=\"/privacy.html\">개인정보 처리방침</a>과 <a href=\"/terms.html\">이용약관</a>에 동의하게 됩니다.",
+    "ERROR:WRONG_STREAM_ID": "잘못된 스트림 ID",
+    "ERROR:NO_STREAM_HOST_FOUND": "스트림을 찾을 수 없음",
+    "ERROR:WRONG_STREAM_PASSWORD": "잘못된 스트림 비밀번호",
+    "ERROR:UNSPECIFIED": "문제가 발생했습니다. 이 페이지를 새로 고치고 다시 시도해주세요."
+}

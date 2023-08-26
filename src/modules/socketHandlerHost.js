@@ -322,7 +322,7 @@ export default function (io, socket) {
             return;
         }
 
-        logger.w(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Disconnecting clients [${payload.reason}]: ${clientSockets.length}` }));
+        logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Disconnecting clients [${payload.reason}]: ${clientSockets.length}` }));
 
         clientSockets.forEach(clientSocket => {
             if (clientSocket.connected) {

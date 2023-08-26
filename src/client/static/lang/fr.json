@@ -1,0 +1,15 @@
+{
+    "header-welcome": "Bienvenue sur ScreenStream",
+    "stream-message": "Pour visionner la diffusion, veuillez saisir l'identifiant et le mot de passe de la diffusion",
+    "stream-id": "Identifiant de la diffusion :",
+    "stream-password": "Mot de passe de la diffusion :",
+    "stream-waiting": "En attente de l'hôte pour démarrer la diffusion",
+    "stream-join": "Rejoindre la diffusion",
+    "stream-id-header": "Identifiant de la diffusion: {streamId}",
+    "stream-leave": "Quitter la diffusion",
+    "privacy-terms": "En rejoignant la diffusion, vous acceptez notre<br><a href=\"/privacy.html\">Politique de Confidentialité</a> et nos <a href=\"/terms.html\">Conditions Générales</a>.",
+    "ERROR:WRONG_STREAM_ID": "Identifiant de diffusion incorrect",
+    "ERROR:NO_STREAM_HOST_FOUND": "Diffusion introuvable",
+    "ERROR:WRONG_STREAM_PASSWORD": "Mot de passe de diffusion incorrect",
+    "ERROR:UNSPECIFIED": "Quelque chose s'est mal passé. Rechargez cette page et réessayez."
+}

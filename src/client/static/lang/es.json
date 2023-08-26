@@ -1,0 +1,15 @@
+{
+    "header-welcome": "Bienvenido a ScreenStream",
+    "stream-message": "Para ver la transmisión, por favor ingresa el ID y la contraseña de la transmisión",
+    "stream-id": "Id de transmisión:",
+    "stream-password": "Contraseña de transmisión:",
+    "stream-waiting": "Esperando a que el anfitrión inicie la transmisión",
+    "stream-join": "Unirse a la transmisión",
+    "stream-id-header": "Id de Transmisión: {streamId}",
+    "stream-leave": "Salir de la transmisión",
+    "privacy-terms": "Al unirte a la transmisión, aceptas nuestra<br><a href=\"/privacy.html\">Política de Privacidad</a> y <a href=\"/terms.html\">Términos y Condiciones</a>.",
+    "ERROR:WRONG_STREAM_ID": "Id de transmisión incorrecto",
+    "ERROR:NO_STREAM_HOST_FOUND": "Transmisión no encontrada",
+    "ERROR:WRONG_STREAM_PASSWORD": "Contraseña de transmisión incorrecta",
+    "ERROR:UNSPECIFIED": "Algo salió mal. Recarga la página y vuelve a intentarlo."
+}

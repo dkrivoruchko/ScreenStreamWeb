@@ -1,0 +1,15 @@
+{
+    "header-welcome": "欢迎使用 ScreenStream",
+    "stream-message": "要查看流，请输入流 ID 和密码",
+    "stream-id": "流 ID：",
+    "stream-password": "流密码：",
+    "stream-waiting": "等待主机开始流",
+    "stream-join": "加入流",
+    "stream-id-header": "流 ID：{streamId}",
+    "stream-leave": "离开流",
+    "privacy-terms": "加入流即表示您同意<br><a href=\"/privacy.html\">隐私政策</a> 和 <a href=\"/terms.html\">服务条款</a>。",
+    "ERROR:WRONG_STREAM_ID": "错误的流 ID",
+    "ERROR:NO_STREAM_HOST_FOUND": "未找到流",
+    "ERROR:WRONG_STREAM_PASSWORD": "错误的流密码",
+    "ERROR:UNSPECIFIED": "出现问题。请重新加载此页面并重试。"
+}

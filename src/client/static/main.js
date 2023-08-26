@@ -38,7 +38,7 @@ const setDataFromUrlParams = () => {
     }
 }
 
-const supportedLocales = ['en', 'ru', 'uk'];
+const supportedLocales = ['zh-TW', 'ar', 'de', 'en', 'es', 'fr', 'it', 'ja', 'ko', 'nl', 'pl', 'pt', 'ru', 'tr', 'uk', 'zh'];
 const locales = new Locales(supportedLocales, navigator.languages);
 window.DD_LOGS && DD_LOGS.logger.debug(`Browser locales: [${navigator.languages}], using locale: ${locales.selectedLocale}`);
 locales.fetchTranslation().then(() => {
@@ -182,3 +182,10 @@ function generateRandomString(length) {
     }
     return result;
 };
+
+// const parseArabic = (str) => {
+//     return Number(str
+//         .replace(/[٠١٢٣٤٥٦٧٨٩]/g, d => d.charCodeAt(0) - 1632) // convert Arabic digits
+//         .replace(/[۰۱۲۳۴۵۶۷۸۹]/g, d => d.charCodeAt(0) - 1776) // convert Persian digits
+//     );
+// }

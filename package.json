@@ -15,6 +15,7 @@
     "start": "node src/index.js"
   },
   "engines": {
+    "npm": "9.8.x",
     "node": "18.x"
   },
   "dependencies": {

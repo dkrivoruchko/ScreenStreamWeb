@@ -1,0 +1,15 @@
+{
+    "header-welcome": "Witaj w ScreenStream",
+    "stream-message": "Aby wyświetlić strumień, wprowadź identyfikator strumienia i hasło",
+    "stream-id": "Identyfikator strumienia:",
+    "stream-password": "Hasło strumienia:",
+    "stream-waiting": "Oczekiwanie na rozpoczęcie strumienia przez hosta",
+    "stream-join": "Dołącz do strumienia",
+    "stream-id-header": "Identyfikator strumienia: {streamId}",
+    "stream-leave": "Opuść strumień",
+    "privacy-terms": "Przystępując do strumienia, akceptujesz naszą<br><a href=\"/privacy.html\">Politykę Prywatności</a> i <a href=\"/terms.html\">Regulamin</a>.",
+    "ERROR:WRONG_STREAM_ID": "Nieprawidłowy identyfikator strumienia",
+    "ERROR:NO_STREAM_HOST_FOUND": "Nie znaleziono strumienia",
+    "ERROR:WRONG_STREAM_PASSWORD": "Nieprawidłowe hasło strumienia",
+    "ERROR:UNSPECIFIED": "Coś poszło nie tak. Odśwież tę stronę i spróbuj ponownie."
+}

@@ -1,0 +1,15 @@
+{
+    "header-welcome": "مرحبًا بك في ScreenStream",
+    "stream-message": "لعرض البث، يُرجى إدخال معرّف البث وكلمة المرور",
+    "stream-id": "معرّف البث:",
+    "stream-password": "كلمة المرور للبث:",
+    "stream-waiting": "في انتظار أن يبدأ المُضيف البث",
+    "stream-join": "الانضمام إلى البث",
+    "stream-id-header": "معرّف البث: {streamId}",
+    "stream-leave": "مغادرة البث",
+    "privacy-terms": "من خلال الانضمام إلى البث، أنت توافق على<br><a href=\"/privacy.html\">سياسة الخصوصية</a> و <a href=\"/terms.html\">الشروط والأحكام</a>.",
+    "ERROR:WRONG_STREAM_ID": "معرّف البث غير صحيح",
+    "ERROR:NO_STREAM_HOST_FOUND": "البث غير موجود",
+    "ERROR:WRONG_STREAM_PASSWORD": "كلمة مرور البث غير صحيحة",
+    "ERROR:UNSPECIFIED": "حدث خطأ ما. يرجى إعادة تحميل الصفحة والمحاولة مرة أخرى."
+}

@@ -1,0 +1,15 @@
+{
+    "header-welcome": "歡迎使用 ScreenStream",
+    "stream-message": "要查看串流，請輸入串流 ID 和密碼",
+    "stream-id": "串流 ID：",
+    "stream-password": "串流密碼：",
+    "stream-waiting": "等待主機開始串流",
+    "stream-join": "加入串流",
+    "stream-id-header": "串流 ID：{streamId}",
+    "stream-leave": "離開串流",
+    "privacy-terms": "加入串流即表示您同意<br><a href=\"/privacy.html\">隱私政策</a>和<a href=\"/terms.html\">服務條款</a>。",
+    "ERROR:WRONG_STREAM_ID": "錯誤的串流 ID",
+    "ERROR:NO_STREAM_HOST_FOUND": "未找到串流",
+    "ERROR:WRONG_STREAM_PASSWORD": "錯誤的串流密碼",
+    "ERROR:UNSPECIFIED": "發生問題。請重新載入此頁面並重試。"
+}

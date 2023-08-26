@@ -1,0 +1,15 @@
+{
+    "header-welcome": "Benvenuti su ScreenStream",
+    "stream-message": "Per visualizzare lo stream, inserisci l'ID dello stream e la password",
+    "stream-id": "ID dello stream:",
+    "stream-password": "Password dello stream:",
+    "stream-waiting": "In attesa che l'host avvii lo stream",
+    "stream-join": "Partecipa allo stream",
+    "stream-id-header": "ID dello Stream: {streamId}",
+    "stream-leave": "Lascia lo stream",
+    "privacy-terms": "Unendoti allo stream, accetti la nostra<br><a href=\"/privacy.html\">Informativa sulla Privacy</a> e i <a href=\"/terms.html\">Termini e Condizioni</a>.",
+    "ERROR:WRONG_STREAM_ID": "ID dello stream errato",
+    "ERROR:NO_STREAM_HOST_FOUND": "Stream non trovato",
+    "ERROR:WRONG_STREAM_PASSWORD": "Password dello stream errata",
+    "ERROR:UNSPECIFIED": "Qualcosa è andato storto. Ricarica questa pagina e riprova."
+}

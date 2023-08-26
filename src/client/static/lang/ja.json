@@ -1,0 +1,15 @@
+{
+    "header-welcome": "ScreenStreamへようこそ",
+    "stream-message": "ストリームを表示するには、ストリームIDとパスワードを入力してください",
+    "stream-id": "ストリームID：",
+    "stream-password": "ストリームパスワード：",
+    "stream-waiting": "ホストがストリームを開始するのを待っています",
+    "stream-join": "ストリームに参加する",
+    "stream-id-header": "ストリームID：{streamId}",
+    "stream-leave": "ストリームを退出する",
+    "privacy-terms": "ストリームに参加することで、<a href=\"/privacy.html\">プライバシーポリシー</a>および<a href=\"/terms.html\">利用規約</a>に同意したことになります。",
+    "ERROR:WRONG_STREAM_ID": "誤ったストリームID",
+    "ERROR:NO_STREAM_HOST_FOUND": "ストリームが見つかりません",
+    "ERROR:WRONG_STREAM_PASSWORD": "誤ったストリームパスワード",
+    "ERROR:UNSPECIFIED": "何か問題が発生しました。このページをリロードしてもう一度お試しください。"
+}
