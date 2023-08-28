@@ -256,7 +256,7 @@ export default function (io, socket) {
     const hostCandidate = async (payload, callback) => {
         const event = '[HOST:CANDIDATE]';
 
-        if (!payload || !payload.clientId || !payload.candidate) {
+        if (!payload || !payload.clientId || (!payload.candidate && !payload.candidates)) {
             logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, payload, error: 'EMPTY_OR_BAD_DATA', message: 'Bad host candidates request' }));
             callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
             return;
@@ -285,7 +285,9 @@ export default function (io, socket) {
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
-        clientSocket.emit('HOST:CANDIDATE', { candidate: payload.candidate }, response => {
+        const candidates = payload.candidates ? payload.candidates : [payload.candidate];
+
+        clientSocket.emit('HOST:CANDIDATE', { candidates: candidates }, response => {
             if (!socket.connected) {
                 logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, clientId: payload.clientId, client_socket: clientSocket.id, message: 'HOST:CANDIDATE Host socket disconnected. Ignoring' }));
                 return;

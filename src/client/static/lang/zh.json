@@ -2,6 +2,7 @@
     "header-welcome": "欢迎使用 ScreenStream",
     "stream-message": "要查看流，请输入流 ID 和密码",
     "stream-id": "流 ID：",
+    "client-id": "客户端标识：",
     "stream-password": "流密码：",
     "stream-waiting": "等待主机开始流",
     "stream-join": "加入流",

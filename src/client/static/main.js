@@ -2,12 +2,16 @@ import { Locales } from './locales.js';
 import { StreamState, WebRTC } from './webrtc.js';
 
 const clientId = generateRandomString(24);
+const crc = ('00000000' + CRC32(clientId).toString(16).toUpperCase()).slice(-8);
+const publicId = crc.substring(0, 4) + "-" + crc.substring(4);
 window.DD_LOGS && DD_LOGS.setGlobalContextProperty('clientId', clientId);
+window.DD_LOGS && DD_LOGS.setGlobalContextProperty('publicId', publicId);
 
 const UIElements = {
     startContainer: document.getElementById('start-container'),
     streamIdInput: document.getElementById('stream-id'),
     passwordInput: document.getElementById('stream-password'),
+
     streamJoinButton: document.getElementById('streamJoinButton'),
     joinButtonLoader: document.getElementById('joinButtonLoader'),
 
@@ -15,13 +19,17 @@ const UIElements = {
     streamErrorCell: document.getElementById('stream-error'),
 
     streamWaitContainer: document.getElementById('stream-wait-container'),
-    streamWaitContainerText: document.getElementById('stream-wait-container-text'),
+    streamWaitStreamId: document.getElementById('stream-wait-stream-id'),
 
     streamingHeader: document.getElementById('streaming-header'),
     streamingContainerText: document.getElementById('streaming-container-text'),
     videoContainer: document.getElementById('video-container'),
     videoElement: document.getElementById('video-element'),
 };
+
+document.getElementById('client-id').innerText = publicId;
+document.getElementById('stream-wait-client-id').innerText = publicId;
+document.getElementById('streaming-client-id').innerText = publicId;
 
 const isStreamIdValid = (id) => typeof id === 'string' && /^\d+$/.test(id) && id.length === 8
 const isStreamPasswordValid = (password) => typeof password === 'string' && /^[a-zA-Z0-9]+$/.test(password) && password.length === 6
@@ -114,8 +122,9 @@ const onNewState = (key, oldValue, newValue, state) => {
     }
 
     if (key === 'isStreamJoined' && state.isStreamJoined) {
-        UIElements.streamWaitContainerText.innerText =
-            locales.getTranslationByKey(UIElements.streamWaitContainerText.getAttribute('data-i18n-key')) || 'Waiting for host to start the stream';
+        UIElements.streamWaitStreamId.innerText =
+            (locales.getTranslationByKey(UIElements.streamWaitStreamId.getAttribute('data-i18n-key')) || 'Stream Id: {streamId}').replace('{streamId}', state.streamId);
+
         UIElements.streamingContainerText.innerText =
             (locales.getTranslationByKey(UIElements.streamingContainerText.getAttribute('data-i18n-key')) || 'Stream Id: {streamId}').replace('{streamId}', state.streamId);
     }
@@ -182,6 +191,9 @@ function generateRandomString(length) {
     }
     return result;
 };
+
+function CRC32(r) { for (var a, o = [], c = 0; c < 256; c++) { a = c; for (var f = 0; f < 8; f++)a = 1 & a ? 3988292384 ^ a >>> 1 : a >>> 1; o[c] = a } for (var n = -1, t = 0; t < r.length; t++)n = n >>> 8 ^ o[255 & (n ^ r.charCodeAt(t))]; return (-1 ^ n) >>> 0 };
+
 
 // const parseArabic = (str) => {
 //     return Number(str

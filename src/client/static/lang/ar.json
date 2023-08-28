@@ -2,6 +2,7 @@
     "header-welcome": "مرحبًا بك في ScreenStream",
     "stream-message": "لعرض البث، يُرجى إدخال معرّف البث وكلمة المرور",
     "stream-id": "معرّف البث:",
+    "client-id": "معرّف العميل:",
     "stream-password": "كلمة المرور للبث:",
     "stream-waiting": "في انتظار أن يبدأ المُضيف البث",
     "stream-join": "الانضمام إلى البث",

@@ -2,6 +2,7 @@
     "header-welcome": "ScreenStream에 오신 것을 환영합니다",
     "stream-message": "스트림을 보려면 스트림 ID와 암호를 입력하세요",
     "stream-id": "스트림 ID:",
+    "client-id": "클라이언트 ID:",
     "stream-password": "스트림 비밀번호:",
     "stream-waiting": "호스트가 스트림을 시작할 때까지 대기 중입니다",
     "stream-join": "스트림 참여",

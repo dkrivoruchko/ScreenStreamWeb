@@ -2,6 +2,7 @@
     "header-welcome": "Bienvenido a ScreenStream",
     "stream-message": "Para ver la transmisión, por favor ingresa el ID y la contraseña de la transmisión",
     "stream-id": "Id de transmisión:",
+    "client-id": "Id de cliente:",
     "stream-password": "Contraseña de transmisión:",
     "stream-waiting": "Esperando a que el anfitrión inicie la transmisión",
     "stream-join": "Unirse a la transmisión",

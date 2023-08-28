@@ -1,14 +1,15 @@
 {
     "header-welcome": "Welkom bij ScreenStream",
     "stream-message": "Om de stream te bekijken, voer de stream-id en het wachtwoord in",
-    "stream-id": "Stream-id:",
+    "stream-id": "Stream-Id:",
+    "client-id": "Klant-Id:",
     "stream-password": "Stream-wachtwoord:",
     "stream-waiting": "Wachten op de host om de stream te starten",
     "stream-join": "Doe mee aan de stream",
-    "stream-id-header": "Stream-id: {streamId}",
+    "stream-id-header": "Stream-Id: {streamId}",
     "stream-leave": "Verlaat de stream",
     "privacy-terms": "Door deel te nemen aan de stream, ga je akkoord met ons<br><a href=\"/privacy.html\">Privacybeleid</a> en onze <a href=\"/terms.html\">Algemene Voorwaarden</a>.",
-    "ERROR:WRONG_STREAM_ID": "Verkeerde stream-id",
+    "ERROR:WRONG_STREAM_ID": "Verkeerde stream-Id",
     "ERROR:NO_STREAM_HOST_FOUND": "Stream niet gevonden",
     "ERROR:WRONG_STREAM_PASSWORD": "Verkeerd stream-wachtwoord",
     "ERROR:UNSPECIFIED": "Er is iets misgegaan. Ververs deze pagina en probeer opnieuw."

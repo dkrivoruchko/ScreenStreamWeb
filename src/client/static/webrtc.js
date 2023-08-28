@@ -223,9 +223,9 @@ export class WebRTC {
         }, 5000);
 
         this.#peerConnection.onconnectionstatechange = (event) => {
-            if (this.#peerConnection.connectionState === 'disconnected') {
+            if (this.#peerConnection.connectionState === 'disconnected') { //TODO Try silent reconnect
                 window.DD_LOGS && DD_LOGS.logger.warn('WebRTC.startStream: PeerConnection state change to "disconnected". Stopping stream.');
-                this.leaveStream(true);
+                this.leaveStream(false);
             }
         }
 
@@ -252,10 +252,10 @@ export class WebRTC {
             }
         };
 
-        this.#socket.on('HOST:CANDIDATE', (hostCandidate, callback) => {
-            if (!hostCandidate || !hostCandidate.candidate) {
+        this.#socket.on('HOST:CANDIDATE', (hostCandidates, callback) => {
+            if (!hostCandidates || !hostCandidates.candidates) {
                 callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
-                window.DD_LOGS && DD_LOGS.logger.warn('WebRTC.startStream: Error in host candidates', { socket_event: '[HOST:CANDIDATE]', error: 'ERROR:EMPTY_OR_BAD_DATA', hostCandidate: hostCandidate.candidate });
+                window.DD_LOGS && DD_LOGS.logger.warn('WebRTC.startStream: Error in host candidates', { socket_event: '[HOST:CANDIDATE]', error: 'ERROR:EMPTY_OR_BAD_DATA', hostCandidate: hostCandidates.candidates });
                 this.#streamState.error = 'WEBRTC_ERROR:NEGOTIATION_ERROR:HOST_CANDIDATE';
                 return;
             }
@@ -263,7 +263,7 @@ export class WebRTC {
             callback({ status: 'OK' });
             window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.startStream: receive [HOST:CANDIDATE]', { socket_event: '[HOST:CANDIDATE]' });
 
-            this.#peerConnection.addIceCandidate(new RTCIceCandidate(hostCandidate.candidate));
+            hostCandidates.candidates.forEach((candidate) => this.#peerConnection.addIceCandidate(new RTCIceCandidate(candidate)));
         });
 
         this.#socket.once('HOST:OFFER', async (hostOffer, callback) => {
@@ -280,9 +280,23 @@ export class WebRTC {
             callback({ status: 'OK' });
             window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.startStream: receive [HOST:OFFER]', { socket_event: '[HOST:OFFER]' });
 
+            try {
+                const hostCodecs = JSON.stringify(hostOffer.offer.split("\n").filter(line => line.startsWith("a=rtpmap:")).map(line => line.split(" ")[1].slice(0, -1)));
+                window.DD_LOGS && DD_LOGS.logger.warn(`HostCodecs: ${hostCodecs}`, { hostCodecs });
+            } catch (e) {
+                window.DD_LOGS && DD_LOGS.logger.warn(`HostCodecs: ${e.message}`, e);
+            }
+
             await this.#peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: hostOffer.offer }));
             const answer = await this.#peerConnection.createAnswer({ voiceActivityDetection: false });
             await this.#peerConnection.setLocalDescription(answer);
+
+            try {
+                const clientCodecs = JSON.stringify(answer.sdp.split("\n").filter(line => line.startsWith("a=rtpmap:")).map(line => line.split(" ")[1].slice(0, -1)));
+                window.DD_LOGS && DD_LOGS.logger.warn(`ClientCodecs: ${clientCodecs}`, { clientCodecs });
+            } catch (e) {
+                window.DD_LOGS && DD_LOGS.logger.warn(`ClientCodecs: ${e.message}`, e);
+            }
 
             this.#socket.timeout(5000).emit('CLIENT:ANSWER', { answer: answer.sdp }, (err, response) => {
                 if (err) {

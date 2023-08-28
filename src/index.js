@@ -16,9 +16,9 @@ const PORT = process.env.PORT || 5000;
 const isPROD = SERVER_ORIGIN === 'screenstream.io';
 
 const index = readFileSync('src/client/index.html').toString()
-  .replace('%DD_SERVICE%', `WebClient${isPROD ? "-PROD" : "-DEV"}`)
-  .replace('%DD_HANDLER%', isPROD ? '["http"]' : '["http", "console"]')
-  .replace('%TURNSTYLE_SITE_KEY%', process.env.TURNSTYLE_SITE_KEY);
+  .replace('$DD_SERVICE$', `WebClient${isPROD ? "-PROD" : "-DEV"}`)
+  .replace('$DD_HANDLER$', isPROD ? '["http"]' : '["http", "console"]')
+  .replace('$TURNSTYLE_SITE_KEY$', process.env.TURNSTYLE_SITE_KEY);
 
 
 const nocache = (_, res, next) => {

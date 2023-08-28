@@ -18,10 +18,10 @@
         site: "datadoghq.com",
         forwardConsoleLogs: ["info", "warn", "error"],
         forwardReports: "all",
-        service: "%DD_SERVICE%",
+        service: "$DD_SERVICE$",
         beforeSend: (log) => { log.view.url = log.view.url.replace(/p=[^&]*/, "p=*") },
       });
-    window.DD_LOGS && DD_LOGS.logger.setHandler(%DD_HANDLER%);
+    window.DD_LOGS && DD_LOGS.logger.setHandler($DD_HANDLER$);
   </script>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
@@ -31,7 +31,7 @@
 
       return new Promise((resolve, reject) => {
         const turnstileWidgetId = window.turnstile.render('#turnstile-container', {
-          sitekey: '%TURNSTYLE_SITE_KEY%',
+          sitekey: '$TURNSTYLE_SITE_KEY$',
           cData: clientId,
           callback: (token) => {
             window.DD_LOGS && DD_LOGS.logger.debug('Got turnstile token');
@@ -40,12 +40,10 @@
           },
           'error-callback': (error_code) => {
             window.DD_LOGS && DD_LOGS.logger.error(`Turnstile error: ${error_code}`, { error: error_code });
-            reject(new Error(`ERROR:TURNSTILE_ERROR:${error_code}`));
             return false;
           },
           'expired-callback': () => {
             window.DD_LOGS && DD_LOGS.logger.warn(`Turnstile expired`);
-            reject(new Error('ERROR:TURNSTILE_EXPIRED'));
             return false;
           }
         });
@@ -74,6 +72,10 @@
           <tr>
             <td style="text-align: end;"><label for="stream-password" data-i18n-key="stream-password">Stream password:</label></td>
             <td style="text-align: start;"><input id="stream-password" type="password" size="8" minlength="6" autocomplete="off"></td>
+          </tr>
+          <tr>
+            <td style="text-align: end; color: #aaa;"><label data-i18n-key="client-id">Client id:</label></td>
+            <td style="text-align: start; color: #aaa; padding: 4px 8px;"><label id="client-id"></label>
           </tr>
           <tr>
             <td colspan="2">
@@ -106,6 +108,8 @@
     <img src="/logo.png" style="width: 160px;" />
     <h2>Screen Stream</h2>
     <p id="stream-wait-container-text" data-i18n-key="stream-waiting">Waiting for host to start the stream</p>
+    <p id="stream-wait-stream-id" data-i18n-key="stream-id-header">Stream id:</p>
+    <p style="color: #aaa; font-size:smaller; margin: 16px;"><label data-i18n-key="client-id">Client id:</label>&nbsp;<label id="stream-wait-client-id"></label></p>
     <div class="loading" style="margin: 8px;">
       <span></span>
       <span></span>
@@ -124,7 +128,8 @@
       <tr>
         <td><img src="/logo.png" /></td>
         <td style="text-align: center;">
-          <div id="streaming-container-text" data-i18n-key="stream-id-header">Stream Id:</div>
+          <div id="streaming-container-text" data-i18n-key="stream-id-header">Stream id:</div>
+          <div style="color: #aaa;margin-top: 8px; font-size:smaller;"><label data-i18n-key="client-id">Client id:</label>&nbsp;<label id="streaming-client-id"></label></div>
         </td>
         <td style="text-align: right;">
           <button id="streamLeaveButton" type="button" data-i18n-key="stream-leave">Leave stream</button>

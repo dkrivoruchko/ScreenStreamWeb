@@ -1,8 +1,9 @@
 {
     "header-welcome": "Bienvenue sur ScreenStream",
     "stream-message": "Pour visionner la diffusion, veuillez saisir l'identifiant et le mot de passe de la diffusion",
-    "stream-id": "Identifiant de la diffusion :",
-    "stream-password": "Mot de passe de la diffusion :",
+    "stream-id": "Identifiant de la diffusion:",
+    "client-id": "Identifiant client:",
+    "stream-password": "Mot de passe de la diffusion:",
     "stream-waiting": "En attente de l'hôte pour démarrer la diffusion",
     "stream-join": "Rejoindre la diffusion",
     "stream-id-header": "Identifiant de la diffusion: {streamId}",

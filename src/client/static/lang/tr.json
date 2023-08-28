@@ -2,6 +2,7 @@
     "header-welcome": "ScreenStream'e hoş geldiniz",
     "stream-message": "Akışı görüntülemek için lütfen akış kimliği ve parolasını girin",
     "stream-id": "Akış kimliği:",
+    "client-id": "Müşteri kimliği:",
     "stream-password": "Akış parolası:",
     "stream-waiting": "Akışı başlatmak için ev sahibini bekliyor",
     "stream-join": "Akışa katılın",

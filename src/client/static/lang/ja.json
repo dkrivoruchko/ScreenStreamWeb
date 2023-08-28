@@ -2,6 +2,7 @@
     "header-welcome": "ScreenStreamへようこそ",
     "stream-message": "ストリームを表示するには、ストリームIDとパスワードを入力してください",
     "stream-id": "ストリームID：",
+    "client-id": "クライアントID：",
     "stream-password": "ストリームパスワード：",
     "stream-waiting": "ホストがストリームを開始するのを待っています",
     "stream-join": "ストリームに参加する",

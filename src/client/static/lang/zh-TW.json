@@ -2,6 +2,7 @@
     "header-welcome": "歡迎使用 ScreenStream",
     "stream-message": "要查看串流，請輸入串流 ID 和密碼",
     "stream-id": "串流 ID：",
+    "client-id": "客戶端識別碼：",
     "stream-password": "串流密碼：",
     "stream-waiting": "等待主機開始串流",
     "stream-join": "加入串流",
