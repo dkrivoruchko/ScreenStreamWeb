@@ -27,10 +27,6 @@ const UIElements = {
     videoElement: document.getElementById('video-element'),
 };
 
-document.getElementById('client-id').innerText = publicId;
-document.getElementById('stream-wait-client-id').innerText = publicId;
-document.getElementById('streaming-client-id').innerText = publicId;
-
 const isStreamIdValid = (id) => typeof id === 'string' && /^\d+$/.test(id) && id.length === 8
 const isStreamPasswordValid = (password) => typeof password === 'string' && /^[a-zA-Z0-9]+$/.test(password) && password.length === 6
 const setDataFromUrlParams = () => {
@@ -61,6 +57,15 @@ locales.fetchTranslation().then(() => {
     }
 });
 
+try {
+    document.getElementById('client-id').innerText = publicId;
+    const s = (locales.getTranslationByKey('client-id') || 'Client id:') + ' ' + publicId;
+    document.getElementById('streaming-client-id').innerText = s;
+    document.getElementById('stream-wait-client-id').innerText = s;
+} catch (e) {
+    window.DD_LOGS && DD_LOGS.logger.warn(`client-id.error: ${e}`, { error: e });
+}
+
 const streamState = new Proxy(new StreamState(), {
     set: function (target, key, value) {
         const oldValue = target[key];
@@ -69,6 +74,8 @@ const streamState = new Proxy(new StreamState(), {
         return true;
     }
 });
+
+window.streamState = streamState;
 
 let hideTimeout = null;
 
@@ -107,7 +114,12 @@ const onNewState = (key, oldValue, newValue, state) => {
     UIElements.streamErrorCell.style.display = (state.error) ? 'block' : 'none';
 
     if (state.error) {
-        if (state.error == 'ERROR:WRONG_STREAM_ID') {
+        if (state.error == 'ERROR:TURNSTILE:200100') {
+            UIElements.streamErrorCell.innerText = locales.getTranslationByKey(state.error) || 'Incorrect device clock time. Please adjust and reload the page.';
+            UIElements.streamJoinCell.style.display = 'none';
+            UIElements.streamJoinButton.style.display = 'none';
+            UIElements.joinButtonLoader.style.display = 'none';
+        } else if (state.error == 'ERROR:WRONG_STREAM_ID') {
             UIElements.streamErrorCell.innerText = locales.getTranslationByKey(state.error) || 'Wrong stream id';
         } else if (state.error == 'ERROR:NO_STREAM_HOST_FOUND') {
             UIElements.streamErrorCell.innerText = locales.getTranslationByKey(state.error) || 'Stream not found';
@@ -193,11 +205,3 @@ function generateRandomString(length) {
 };
 
 function CRC32(r) { for (var a, o = [], c = 0; c < 256; c++) { a = c; for (var f = 0; f < 8; f++)a = 1 & a ? 3988292384 ^ a >>> 1 : a >>> 1; o[c] = a } for (var n = -1, t = 0; t < r.length; t++)n = n >>> 8 ^ o[255 & (n ^ r.charCodeAt(t))]; return (-1 ^ n) >>> 0 };
-
-
-// const parseArabic = (str) => {
-//     return Number(str
-//         .replace(/[٠١٢٣٤٥٦٧٨٩]/g, d => d.charCodeAt(0) - 1632) // convert Arabic digits
-//         .replace(/[۰۱۲۳۴۵۶۷۸۹]/g, d => d.charCodeAt(0) - 1776) // convert Persian digits
-//     );
-// }

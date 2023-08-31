@@ -9,6 +9,7 @@
     "stream-id-header": "Stream Id: {streamId}",
     "stream-leave": "Stream verlassen",
     "privacy-terms": "Durch das Beitritt zum Stream stimmen Sie der<br><a href=\"/privacy.html\">Datenschutzrichtlinie</a> und den <a href=\"/terms.html\">Allgemeinen Geschäftsbedingungen</a> zu.",
+    "ERROR:TURNSTILE:200100": "Falsche Geräte-Uhrzeit. Bitte anpassen und die Seite neu laden.",
     "ERROR:WRONG_STREAM_ID": "Falsche Stream Id",
     "ERROR:NO_STREAM_HOST_FOUND": "Stream nicht gefunden",
     "ERROR:WRONG_STREAM_PASSWORD": "Falsches Stream Passwort",

@@ -9,6 +9,7 @@
     "stream-id-header": "Stream-Id: {streamId}",
     "stream-leave": "Verlaat de stream",
     "privacy-terms": "Door deel te nemen aan de stream, ga je akkoord met ons<br><a href=\"/privacy.html\">Privacybeleid</a> en onze <a href=\"/terms.html\">Algemene Voorwaarden</a>.",
+    "ERROR:TURNSTILE:200100": "Onjuiste apparaattijd. Pas aan en laad de pagina opnieuw.",
     "ERROR:WRONG_STREAM_ID": "Verkeerde stream-Id",
     "ERROR:NO_STREAM_HOST_FOUND": "Stream niet gevonden",
     "ERROR:WRONG_STREAM_PASSWORD": "Verkeerd stream-wachtwoord",

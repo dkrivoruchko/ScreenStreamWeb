@@ -9,6 +9,7 @@
     "stream-id-header": "Identifiant de la diffusion: {streamId}",
     "stream-leave": "Quitter la diffusion",
     "privacy-terms": "En rejoignant la diffusion, vous acceptez notre<br><a href=\"/privacy.html\">Politique de Confidentialité</a> et nos <a href=\"/terms.html\">Conditions Générales</a>.",
+    "ERROR:TURNSTILE:200100": "Heure incorrecte sur le dispositif. Veuillez ajuster et recharger la page.",
     "ERROR:WRONG_STREAM_ID": "Identifiant de diffusion incorrect",
     "ERROR:NO_STREAM_HOST_FOUND": "Diffusion introuvable",
     "ERROR:WRONG_STREAM_PASSWORD": "Mot de passe de diffusion incorrect",

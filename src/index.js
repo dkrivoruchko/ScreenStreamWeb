@@ -23,7 +23,13 @@ const index = readFileSync('src/client/index.html').toString()
 
 const nocache = (_, res, next) => {
   res.setHeader("Surrogate-Control", "no-store");
-  res.setHeader("Cache-Control", "max-age=0, must-revalidate, no-cache, no-store, private");
+  res.setHeader("Cache-Control", "no-cache, must-revalidate, max-age=0");
+  next();
+};
+
+const revalidate = (_, res, next) => {
+  res.setHeader("Surrogate-Control", "no-store");
+  res.setHeader("Cache-Control", "public, max-age=0");
   next();
 };
 
@@ -38,7 +44,7 @@ const expressApp = express()
   })
   .get('/app/ping', nocache, (req, res) => { res.sendStatus(204) })
   .get('/app/nonce', nocache, nonceHandler)
-  .get('/', (req, res) => { if (req.hostname !== SERVER_ORIGIN) res.redirect(301, `https://${SERVER_ORIGIN}`); else res.send(index); })
+  .get('/', revalidate, (req, res) => { if (req.hostname !== SERVER_ORIGIN) res.redirect(301, `https://${SERVER_ORIGIN}`); else res.send(index); })
   .get('*', (req, res) => res.sendStatus(404));
 
 const expressServer = expressApp.listen(PORT, () => {
