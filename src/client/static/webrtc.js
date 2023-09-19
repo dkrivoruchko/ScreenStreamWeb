@@ -219,13 +219,13 @@ export class WebRTC {
 
         this.#hostOfferTimeout = setTimeout(() => {
             window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.startStream: HOST:OFFER timeout. Leaving stream.');
-            this.leaveStream(false);
+            this.leaveStream(true);
         }, 5000);
 
         this.#peerConnection.onconnectionstatechange = (event) => {
             if (this.#peerConnection.connectionState === 'disconnected') { //TODO Try silent reconnect
                 window.DD_LOGS && DD_LOGS.logger.warn('WebRTC.startStream: PeerConnection state change to "disconnected". Stopping stream.');
-                this.leaveStream(false);
+                this.leaveStream(true);
             }
         }
 

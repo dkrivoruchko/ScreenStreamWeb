@@ -81,6 +81,10 @@ body {
 }
 
 #start-container a {
+    color: #fff
+}
+
+#start-container #privacy a {
     color: #aaa
 }
 

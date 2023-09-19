@@ -1,6 +1,7 @@
 {
     "header-welcome": "Bienvenido a ScreenStream",
-    "stream-message": "Para ver la transmisión, por favor ingresa el ID y la contraseña de la transmisión",
+    "stream-about": "La <a href=\"https://github.com/dkrivoruchko/ScreenStream\">aplicación de código abierto</a> <a href=\"https://play.google.com/store/apps/details?id=info.dvkr.screenstream\">para Android</a> que permite a los usuarios compartir fácilmente la pantalla de su dispositivo",
+    "stream-message": "Para ver la pantalla, por favor ingrese el Id de transmisión y la contraseña",
     "stream-id": "Id de transmisión:",
     "client-id": "Id de cliente:",
     "stream-password": "Contraseña de transmisión:",

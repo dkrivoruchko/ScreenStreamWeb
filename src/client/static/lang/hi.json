@@ -1,0 +1,18 @@
+{
+    "header-welcome": "स्क्रीनस्ट्रीम में आपका स्वागत है",
+    "stream-about": "यह एक <a href=\"https://github.com/dkrivoruchko/ScreenStream\">ओपन-सोर्स</a> <a href=\"https://play.google.com/store/apps/details?id=info.dvkr.screenstream\">Android एप्लिकेशन</a> है जिससे उपयोगकर्ता आसानी से अपनी डिवाइस की स्क्रीन साझा कर सकते हैं",
+    "stream-message": "स्क्रीन देखने के लिए कृपया स्ट्रीम आईडी और पासवर्ड दर्ज करें",
+    "stream-id": "स्ट्रीम आईडी:",
+    "client-id": "क्लाइंट आईडी:",
+    "stream-password": "स्ट्रीम पासवर्ड:",
+    "stream-waiting": "मेजबान के स्ट्रीम शुरू करने की प्रतीक्षा कर रहे हैं",
+    "stream-join": "स्ट्रीम में शामिल हों",
+    "stream-id-header": "स्ट्रीम आईडी: {streamId}",
+    "stream-leave": "स्ट्रीम छोड़ें",
+    "privacy-terms": "स्ट्रीम में शामिल होने के साथ, आप इस <br><a href=\"/privacy.html\">गोपनीयता नीति</a> और <a href=\"/terms.html\">शर्तें और नियम</a> के साथ सहमत होते हैं।",
+    "ERROR:TURNSTILE:200100": "गलत डिवाइस घड़ी का समय। कृपया समय समायोजित करें और पृष्ठ को फिर से लोड करें।",
+    "ERROR:WRONG_STREAM_ID": "गलत स्ट्रीम आईडी",
+    "ERROR:NO_STREAM_HOST_FOUND": "स्ट्रीम नहीं मिला",
+    "ERROR:WRONG_STREAM_PASSWORD": "गलत स्ट्रीम पासवर्ड",
+    "ERROR:UNSPECIFIED": "कुछ गलत हो गया है। कृपया इस पृष्ठ को फिर से लोड करें और पुन: प्रयास करें।"
+}

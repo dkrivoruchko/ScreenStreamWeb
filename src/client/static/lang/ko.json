@@ -1,6 +1,7 @@
 {
     "header-welcome": "ScreenStream에 오신 것을 환영합니다",
-    "stream-message": "스트림을 보려면 스트림 ID와 암호를 입력하세요",
+    "stream-about": "사용자가 디바이스 화면을 쉽게 공유할 수 있는 <a href=\"https://github.com/dkrivoruchko/ScreenStream\">오픈 소스</a> <a href=\"https://play.google.com/store/apps/details?id=info.dvkr.screenstream\">Android 애플리케이션</a>",
+    "stream-message": "화면을 보려면 스트림 ID와 암호를 입력하세요",
     "stream-id": "스트림 ID:",
     "client-id": "클라이언트 ID:",
     "stream-password": "스트림 비밀번호:",

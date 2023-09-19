@@ -1,6 +1,7 @@
 {
     "header-welcome": "歡迎使用 ScreenStream",
-    "stream-message": "要查看串流，請輸入串流 ID 和密碼",
+    "stream-about": "這是一個 <a href=\"https://github.com/dkrivoruchko/ScreenStream\">開源</a> <a href=\"https://play.google.com/store/apps/details?id=info.dvkr.screenstream\">Android 應用程式</a>，允許用戶輕鬆分享他們的設備屏幕",
+    "stream-message": "觀看螢幕請輸入串流 ID 和密碼",
     "stream-id": "串流 ID：",
     "client-id": "客戶端識別碼：",
     "stream-password": "串流密碼：",

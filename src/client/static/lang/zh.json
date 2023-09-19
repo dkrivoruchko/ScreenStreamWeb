@@ -1,6 +1,7 @@
 {
     "header-welcome": "欢迎使用 ScreenStream",
-    "stream-message": "要查看流，请输入流 ID 和密码",
+    "stream-about": "这是一个 <a href=\"https://github.com/dkrivoruchko/ScreenStream\">开源</a> <a href=\"https://play.google.com/store/apps/details?id=info.dvkr.screenstream\">Android 应用程序</a>，允许用户轻松分享他们的设备屏幕",
+    "stream-message": "要查看屏幕，请输入流ID和密码",
     "stream-id": "流 ID：",
     "client-id": "客户端标识：",
     "stream-password": "流密码：",

@@ -1,6 +1,7 @@
 {
     "header-welcome": "ScreenStream'e hoş geldiniz",
-    "stream-message": "Akışı görüntülemek için lütfen akış kimliği ve parolasını girin",
+    "stream-about": "Kullanıcıların cihaz ekranlarını kolayca paylaşmalarına olanak tanıyan <a href=\"https://github.com/dkrivoruchko/ScreenStream\">açık kaynaklı</a> <a href=\"https://play.google.com/store/apps/details?id=info.dvkr.screenstream\">Android uygulaması</a>",
+    "stream-message": "Ekranı görüntülemek için lütfen akış Kimliği ve Parolayı girin",
     "stream-id": "Akış kimliği:",
     "client-id": "Müşteri kimliği:",
     "stream-password": "Akış parolası:",

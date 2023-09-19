@@ -63,7 +63,9 @@
   <div id="start-container">
     <img src="/logo.png" style="width: 160px;" />
     <h2 data-i18n-key="header-welcome">Welcome to ScreenStream</h2>
-    <div data-i18n-key="stream-message">To view stream please enter stream id and password</div><br>
+    <div data-i18n-key="stream-about">The <a href="https://github.com/dkrivoruchko/ScreenStream">open-source</a> <a href="https://play.google.com/store/apps/details?id=info.dvkr.screenstream">Android application</a> that allows users to easily share their device screen</div><br>
+
+    <div data-i18n-key="stream-message">To view stream please enter stream Id and Password</div><br>
 
     <form action="" id="startForm" autocomplete="off">
       <table>
@@ -73,11 +75,11 @@
             <td style="text-align: start;"><input id="stream-id" type="text" size="8" minlength="8" maxlength="8" autocomplete="off"></td>
           </tr>
           <tr>
-            <td style="text-align: end;"><label for="stream-password" data-i18n-key="stream-password">Stream password:</label></td>
+            <td style="text-align: end;"><label for="stream-password" data-i18n-key="stream-password">Stream Password:</label></td>
             <td style="text-align: start;"><input id="stream-password" type="password" size="8" minlength="6" autocomplete="off"></td>
           </tr>
           <tr>
-            <td data-i18n-key="client-id" style="text-align: end; color: #aaa;">Client id:</td>
+            <td data-i18n-key="client-id" style="text-align: end; color: #aaa;">Client Id:</td>
             <td style="text-align: start; color: #aaa; padding: 4px 8px;"><label id="client-id"></label></td>
           </tr>
           <tr>
@@ -104,15 +106,15 @@
       </table>
     </form>
 
-    <div id="privacy" style="font-size: small; line-height: 150%; color: #aaa;" data-i18n-key="privacy-terms">By joining stream, you agree to<br><a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms and Conditions</a>.</div>
+    <div id="privacy" style="font-size: small; line-height: 150%; color: #aaa;" data-i18n-key="privacy-terms">By joining stream, you agree to<br><a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms and Conditions</a></div>
   </div>
 
   <div id="stream-wait-container" style="display: none;">
     <img src="/logo.png" style="width: 160px;" />
-    <h2>Screen Stream</h2>
+    <h2>ScreenStream</h2>
     <p id="stream-wait-container-text" data-i18n-key="stream-waiting">Waiting for host to start the stream</p>
-    <p id="stream-wait-stream-id" data-i18n-key="stream-id-header">Stream id:</p>
-    <p id="stream-wait-client-id" style="color: #aaa; font-size:smaller; margin: 16px;">Client id:</p>
+    <p id="stream-wait-stream-id" data-i18n-key="stream-id-header">Stream Id:</p>
+    <p id="stream-wait-client-id" style="color: #aaa; font-size:smaller; margin: 16px;">Client Id:</p>
     <div class="loading" style="margin: 8px;">
       <span></span>
       <span></span>
@@ -131,8 +133,8 @@
       <tr>
         <td><img src="/logo.png" /></td>
         <td style="text-align: center;">
-          <div id="streaming-container-text" data-i18n-key="stream-id-header">Stream id:</div>
-          <div id="streaming-client-id" style="color: #aaa;margin-top: 8px; font-size:smaller;">Client id:</div>
+          <div id="streaming-container-text" data-i18n-key="stream-id-header">Stream Id:</div>
+          <div id="streaming-client-id" style="color: #aaa;margin-top: 8px; font-size:smaller;">Client Id:</div>
         </td>
         <td style="text-align: right;">
           <button id="streamLeaveButton" type="button" data-i18n-key="stream-leave">Leave stream</button>
