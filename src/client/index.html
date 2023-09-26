@@ -22,9 +22,10 @@
         beforeSend: (log) => { log.view.url = log.view.url.replace(/p=[^&]*/, "p=*") },
       });
     window.DD_LOGS && DD_LOGS.logger.setHandler($DD_HANDLER$);
+    window.DD_LOGS && DD_LOGS.setGlobalContextProperty('version', $PACKAGE_VERSION$);
   </script>
 
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous" async></script>
   <script>
     window.getTurnstileTokenAsync = (clientId) => {
       window.DD_LOGS && DD_LOGS.logger.debug(`getTurnstileTokenAsync: clientId=${clientId}`);
@@ -61,7 +62,7 @@
   <div id="canvas-container"></div>
 
   <div id="start-container">
-    <img src="/logo.png" style="width: 160px;" />
+    <img src="/logo.webp" style="width: 160px; height: 160px;" />
     <h2 data-i18n-key="header-welcome">Welcome to ScreenStream</h2>
     <div data-i18n-key="stream-about">The <a href="https://github.com/dkrivoruchko/ScreenStream">open-source</a> <a href="https://play.google.com/store/apps/details?id=info.dvkr.screenstream">Android application</a> that allows users to easily share their device screen</div><br>
 
@@ -110,7 +111,7 @@
   </div>
 
   <div id="stream-wait-container" style="display: none;">
-    <img src="/logo.png" style="width: 160px;" />
+    <img src="/logo.webp" style="width: 160px; height: 160px;" />
     <h2>ScreenStream</h2>
     <p id="stream-wait-container-text" data-i18n-key="stream-waiting">Waiting for host to start the stream</p>
     <p id="stream-wait-stream-id" data-i18n-key="stream-id-header">Stream Id:</p>
@@ -131,7 +132,7 @@
   <div id="streaming-header" style="display: none;">
     <table>
       <tr>
-        <td><img src="/logo.png" /></td>
+        <td><img src="/logo.webp" /></td>
         <td style="text-align: center;">
           <div id="streaming-container-text" data-i18n-key="stream-id-header">Stream Id:</div>
           <div id="streaming-client-id" style="color: #aaa;margin-top: 8px; font-size:smaller;">Client Id:</div>

@@ -18,6 +18,7 @@ const isPROD = SERVER_ORIGIN === 'screenstream.io';
 const index = readFileSync('src/client/index.html').toString()
   .replace('$DD_SERVICE$', `WebClient${isPROD ? "-PROD" : "-DEV"}`)
   .replace('$DD_HANDLER$', isPROD ? '["http"]' : '["http", "console"]')
+  .replace('$PACKAGE_VERSION$', `'${process.env.npm_package_version}'`)
   .replace('$TURNSTYLE_SITE_KEY$', process.env.TURNSTYLE_SITE_KEY);
 
 
