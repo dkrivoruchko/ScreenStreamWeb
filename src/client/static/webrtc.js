@@ -155,6 +155,11 @@ export class WebRTC {
             return;
         }
 
+        if (this.#streamState.isJoiningStream == true) {
+            window.DD_LOGS && DD_LOGS.logger.info('WebRTC.joinStream: isJoiningStream==true. Ignoring');
+            return;
+        }
+
         window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.joinStream: ${streamId}`, { streamId });
         this.#streamState.isJoiningStream = true;
 

@@ -1,6 +1,6 @@
 {
   "name": "screenstream.io",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Server and Web Client for ScreenStream Android App",
   "homepage": "https://screenstream.io",
   "license": "MIT",
@@ -15,7 +15,7 @@
     "start": "node src/index.js"
   },
   "engines": {
-    "npm": "9.8.x",
+    "npm": "10.1.x",
     "node": "18.x"
   },
   "dependencies": {
