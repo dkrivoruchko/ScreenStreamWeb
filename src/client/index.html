@@ -12,35 +12,39 @@
 
   <script type="text/javascript" src="https://www.datadoghq-browser-agent.com/us1/v4/datadog-logs.js" crossorigin="anonymous"></script>
   <script>
-    window.DD_LOGS &&
-      DD_LOGS.init({
-        clientToken: "pub26fc6543f9239240ed8ae545593f921f",
-        site: "datadoghq.com",
-        forwardConsoleLogs: ["info", "warn", "error"],
-        forwardReports: "all",
-        service: "$DD_SERVICE$",
-        beforeSend: (log) => { log.view.url = log.view.url.replace(/p=[^&]*/, "p=*") },
-      });
+    "use strict";
+
+    window.DD_LOGS && DD_LOGS.init({
+      clientToken: "pub26fc6543f9239240ed8ae545593f921f",
+      site: "datadoghq.com",
+      forwardConsoleLogs: ["info", "warn", "error"],
+      forwardReports: "all",
+      service: "$DD_SERVICE$",
+      beforeSend: function beforeSend(log) {
+        log.view.url = log.view.url.replace(/p=[^&]*/, "p=*");
+      }
+    });
     window.DD_LOGS && DD_LOGS.logger.setHandler($DD_HANDLER$);
     window.DD_LOGS && DD_LOGS.setGlobalContextProperty('version', $PACKAGE_VERSION$);
   </script>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous" async></script>
   <script>
-    window.getTurnstileTokenAsync = (clientId) => {
-      window.DD_LOGS && DD_LOGS.logger.debug(`getTurnstileTokenAsync: clientId=${clientId}`);
+    "use strict";
 
-      return new Promise((resolve, reject) => {
-        const turnstileWidgetId = window.turnstile.render('#turnstile-container', {
-          sitekey: '$TURNSTYLE_SITE_KEY$',
+    window.getTurnstileTokenAsync = function (clientId) {
+      window.DD_LOGS && DD_LOGS.logger.debug("getTurnstileTokenAsync: clientId=".concat(clientId));
+      return new Promise(function (resolve, reject) {
+        var turnstileWidgetId = window.turnstile.render("#turnstile-container", {
+          sitekey: "$TURNSTYLE_SITE_KEY$",
           cData: clientId,
-          callback: (token) => {
-            window.DD_LOGS && DD_LOGS.logger.debug('Got turnstile token');
+          callback: function callback(token) {
+            window.DD_LOGS && DD_LOGS.logger.debug("Got turnstile token");
             window.turnstile.remove(turnstileWidgetId);
             resolve(token);
           },
-          'error-callback': (error_code) => {
-            window.DD_LOGS && DD_LOGS.logger.error(`Turnstile error: ${error_code}`, { error: error_code });
+          'error-callback': function errorCallback(error_code) {
+            window.DD_LOGS && DD_LOGS.logger.error("Turnstile error: ".concat(error_code), { error: error_code });
             if (error_code == "200100") {
               window.streamState.error = "ERROR:TURNSTILE:200100";
               window.turnstile.remove(turnstileWidgetId);
@@ -48,12 +52,12 @@
             }
             return false;
           },
-          'expired-callback': () => {
-            window.DD_LOGS && DD_LOGS.logger.warn(`Turnstile expired`);
+          'expired-callback': function expiredCallback() {
+            window.DD_LOGS && DD_LOGS.logger.warn("Turnstile expired");
             return false;
           }
         });
-      })
+      });
     };
   </script>
 </head>
@@ -154,7 +158,7 @@
     ModManager.load("polygon").then((it) => { renderer.initMod(it).then(() => { renderer.mod._renderer.setSize(window.innerWidth, window.innerHeight) }) });
     window.addEventListener("resize", () => { renderer.mod._renderer.setSize(window.innerWidth, window.innerHeight) });
   </script>
-  <script src="/main.js" type="module"></script>
+  <script src="/bundle.js" type="module"></script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" crossorigin="anonymous" defer></script>
 </body>
 
