@@ -10,6 +10,7 @@
     "stream-id-header": "스트림 ID: {streamId}",
     "stream-leave": "스트림 나가기",
     "privacy-terms": "스트림에 참여함으로써 <a href=\"/privacy.html\">개인정보 처리방침</a>과 <a href=\"/terms.html\">이용약관</a>에 동의하게 됩니다.",
+    "ERROR:WEBRTC_NOT_SUPPORTED": "이 웹 브라우저는 WebRTC를 지원하지 않습니다. 다른 브라우저를 고려해보십시오.",
     "ERROR:TURNSTILE:200100": "잘못된 장치 시계 시간입니다. 시간을 조정한 후 페이지를 다시 로드해주세요.",
     "ERROR:WRONG_STREAM_ID": "잘못된 스트림 ID",
     "ERROR:NO_STREAM_HOST_FOUND": "스트림을 찾을 수 없음",

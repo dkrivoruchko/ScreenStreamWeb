@@ -10,6 +10,7 @@
     "stream-id-header": "स्ट्रीम आईडी: {streamId}",
     "stream-leave": "स्ट्रीम छोड़ें",
     "privacy-terms": "स्ट्रीम में शामिल होने के साथ, आप इस <br><a href=\"/privacy.html\">गोपनीयता नीति</a> और <a href=\"/terms.html\">शर्तें और नियम</a> के साथ सहमत होते हैं।",
+    "ERROR:WEBRTC_NOT_SUPPORTED": "यह वेब ब्राउज़र WebRTC का समर्थन नहीं करता है। कृपया दूसरा ब्राउज़र उपयोग करने की विचार करें।",
     "ERROR:TURNSTILE:200100": "गलत डिवाइस घड़ी का समय। कृपया समय समायोजित करें और पृष्ठ को फिर से लोड करें।",
     "ERROR:WRONG_STREAM_ID": "गलत स्ट्रीम आईडी",
     "ERROR:NO_STREAM_HOST_FOUND": "स्ट्रीम नहीं मिला",

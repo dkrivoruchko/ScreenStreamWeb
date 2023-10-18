@@ -10,6 +10,7 @@
     "stream-id-header": "ID do Stream: {streamId}",
     "stream-leave": "Sair do stream",
     "privacy-terms": "Ao entrar no stream, você concorda com a<br><a href=\"/privacy.html\">Política de Privacidade</a> e os <a href=\"/terms.html\">Termos e Condições</a>.",
+    "ERROR:WEBRTC_NOT_SUPPORTED": "Este navegador da web não suporta WebRTC. Considere usar outro navegador.",
     "ERROR:TURNSTILE:200100": "Horário do dispositivo incorreto. Por favor, ajuste e recarregue a página.",
     "ERROR:WRONG_STREAM_ID": "ID do stream incorreto",
     "ERROR:NO_STREAM_HOST_FOUND": "Stream não encontrado",

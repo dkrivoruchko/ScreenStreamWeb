@@ -10,6 +10,7 @@
     "stream-id-header": "معرّف البث: {streamId}",
     "stream-leave": "مغادرة البث",
     "privacy-terms": "من خلال الانضمام إلى البث، أنت توافق على<br><a href=\"/privacy.html\">سياسة الخصوصية</a> و <a href=\"/terms.html\">الشروط والأحكام</a>.",
+    "ERROR:WEBRTC_NOT_SUPPORTED": "هذا المتصفح لا يدعم WebRTC. الرجاء التفكير في استخدام متصفح آخر.",
     "ERROR:TURNSTILE:200100": "وقت ساعة الجهاز غير صحيح. يرجى ضبط الوقت وإعادة تحميل الصفحة.",
     "ERROR:WRONG_STREAM_ID": "معرّف البث غير صحيح",
     "ERROR:NO_STREAM_HOST_FOUND": "البث غير موجود",

@@ -292,6 +292,7 @@ WebRTC.prototype.startStream = function () {
     window.DD_LOGS && DD_LOGS.logger.warn('WebRTC.startStream: PeerConnection exist. Cleaning it first.');
     this.stopStream();
   }
+  var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
   this.peerConnection = new RTCPeerConnection({
     bundlePolicy: 'balanced',
     iceServers: [{
@@ -509,6 +510,10 @@ var setDataFromUrlParams = function setDataFromUrlParams() {
     }
   }
 };
+var checkWebRTCsupport = function checkWebRTCsupport() {
+  var connection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+  if (typeof connection === 'undefined') window.streamState = "ERROR:WEBRTC_NOT_SUPPORTED";
+};
 var supportedLocales = ['zh-TW', 'ar', 'de', 'en', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'nl', 'pl', 'pt', 'ru', 'tr', 'uk', 'zh'];
 var locales = new Locales(supportedLocales, navigator.languages);
 window.DD_LOGS && DD_LOGS.logger.debug("Browser locales: [".concat(navigator.languages, "], using locale: ").concat(locales.selectedLocale));
@@ -517,10 +522,12 @@ locales.fetchTranslation().then(function () {
     document.addEventListener('DOMContentLoaded', function () {
       locales.translateDocument();
       setDataFromUrlParams();
+      checkWebRTCsupport();
     });
   } else {
     locales.translateDocument();
     setDataFromUrlParams();
+    checkWebRTCsupport();
   }
 });
 try {

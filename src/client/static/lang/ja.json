@@ -10,6 +10,7 @@
     "stream-id-header": "ストリームID：{streamId}",
     "stream-leave": "ストリームを退出する",
     "privacy-terms": "ストリームに参加することで、<a href=\"/privacy.html\">プライバシーポリシー</a>および<a href=\"/terms.html\">利用規約</a>に同意したことになります。",
+    "ERROR:WEBRTC_NOT_SUPPORTED": "このウェブブラウザはWebRTCをサポートしていません。別のブラウザをご検討ください。",
     "ERROR:TURNSTILE:200100": "デバイスの時計の時間が正しくありません。調整してページを再読み込みしてください。",
     "ERROR:WRONG_STREAM_ID": "誤ったストリームID",
     "ERROR:NO_STREAM_HOST_FOUND": "ストリームが見つかりません",

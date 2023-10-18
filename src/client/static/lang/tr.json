@@ -10,6 +10,7 @@
     "stream-id-header": "Akış Kimliği: {streamId}",
     "stream-leave": "Akışı terk edin",
     "privacy-terms": "Akışa katılarak, <a href=\"/privacy.html\">Gizlilik Politikası</a> ve <a href=\"/terms.html\">Kullanım Koşulları</a>'nı kabul etmiş olursunuz.",
+    "ERROR:WEBRTC_NOT_SUPPORTED": "Bu web tarayıcı WebRTC'yi desteklemiyor. Lütfen farklı bir tarayıcı kullanmayı düşünün.",
     "ERROR:TURNSTILE:200100": "Yanlış cihaz saati. Lütfen ayarlayın ve sayfayı yeniden yükleyin.",
     "ERROR:WRONG_STREAM_ID": "Yanlış akış kimliği",
     "ERROR:NO_STREAM_HOST_FOUND": "Akış bulunamadı",

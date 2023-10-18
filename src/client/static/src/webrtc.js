@@ -193,6 +193,8 @@ WebRTC.prototype.startStream = function () {
         this.stopStream();
     }
 
+    const RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+
     this.peerConnection = new RTCPeerConnection({
         bundlePolicy: 'balanced',
         iceServers: [{ urls: this.iceServers.sort(() => .5 - Math.random()).slice(0, 2) }],

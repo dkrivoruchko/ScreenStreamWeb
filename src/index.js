@@ -24,13 +24,13 @@ const index = readFileSync('src/client/index.html').toString()
 
 const nocache = (_, res, next) => {
   res.setHeader("Surrogate-Control", "no-store");
-  res.setHeader("Cache-Control", "no-cache, must-revalidate, max-age=0");
+  res.setHeader("Cache-Control", "no-cache, max-age=0, must-revalidate");
   next();
 };
 
 const revalidate = (_, res, next) => {
   res.setHeader("Surrogate-Control", "no-store");
-  res.setHeader("Cache-Control", "public, max-age=0");
+  res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
   next();
 };
 

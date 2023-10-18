@@ -10,6 +10,7 @@
     "stream-id-header": "Id de Transmisión: {streamId}",
     "stream-leave": "Salir de la transmisión",
     "privacy-terms": "Al unirte a la transmisión, aceptas nuestra<br><a href=\"/privacy.html\">Política de Privacidad</a> y <a href=\"/terms.html\">Términos y Condiciones</a>.",
+    "ERROR:WEBRTC_NOT_SUPPORTED": "Este navegador web no admite WebRTC. Considere utilizar otro navegador.",
     "ERROR:TURNSTILE:200100": "Hora incorrecta del dispositivo. Por favor, ajusta y recarga la página.",
     "ERROR:WRONG_STREAM_ID": "Id de transmisión incorrecto",
     "ERROR:NO_STREAM_HOST_FOUND": "Transmisión no encontrada",

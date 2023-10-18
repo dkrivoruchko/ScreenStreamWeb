@@ -38,7 +38,12 @@ const setDataFromUrlParams = () => {
             UIElements.passwordInput.value = streamPassword;
         }
     }
-}
+};
+
+const checkWebRTCsupport = () => {
+    const connection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+    if (typeof connection === 'undefined') window.streamState = "ERROR:WEBRTC_NOT_SUPPORTED";
+};
 
 const supportedLocales = ['zh-TW', 'ar', 'de', 'en', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'nl', 'pl', 'pt', 'ru', 'tr', 'uk', 'zh'];
 const locales = new Locales(supportedLocales, navigator.languages);
@@ -48,10 +53,12 @@ locales.fetchTranslation().then(() => {
         document.addEventListener('DOMContentLoaded', () => {
             locales.translateDocument();
             setDataFromUrlParams();
+            checkWebRTCsupport();
         });
     } else {
         locales.translateDocument();
         setDataFromUrlParams();
+        checkWebRTCsupport();
     }
 });
 

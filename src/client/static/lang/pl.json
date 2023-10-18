@@ -10,6 +10,7 @@
     "stream-id-header": "Identyfikator strumienia: {streamId}",
     "stream-leave": "Opuść strumień",
     "privacy-terms": "Przystępując do strumienia, akceptujesz naszą<br><a href=\"/privacy.html\">Politykę Prywatności</a> i <a href=\"/terms.html\">Regulamin</a>.",
+    "ERROR:WEBRTC_NOT_SUPPORTED": "Ta przeglądarka nie obsługuje WebRTC. Proszę rozważyć użycie innej przeglądarki.",
     "ERROR:TURNSTILE:200100": "Nieprawidłowy czas zegara urządzenia. Proszę dostosować czas i przeładować stronę.",
     "ERROR:WRONG_STREAM_ID": "Nieprawidłowy identyfikator strumienia",
     "ERROR:NO_STREAM_HOST_FOUND": "Nie znaleziono strumienia",
