@@ -1,6 +1,6 @@
 export function Locales(supportedTags, browserLanguages) {
-    this.selectedLocale = this.lookup(supportedTags, browserLanguages);
     this.defaultLocale = 'en';
+    this.selectedLocale = this.lookup(supportedTags, browserLanguages).toLowerCase();
     this.translations = {};
     this.defaultTranslations = {};
 }

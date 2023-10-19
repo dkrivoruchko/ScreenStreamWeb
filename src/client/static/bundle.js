@@ -4,8 +4,8 @@ var __webpack_exports__ = {};
 
 ;// CONCATENATED MODULE: ./src/client/static/src/locales.js
 function Locales(supportedTags, browserLanguages) {
-  this.selectedLocale = this.lookup(supportedTags, browserLanguages);
   this.defaultLocale = 'en';
+  this.selectedLocale = this.lookup(supportedTags, browserLanguages).toLowerCase();
   this.translations = {};
   this.defaultTranslations = {};
 }
