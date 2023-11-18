@@ -158,9 +158,9 @@ WebRTC.prototype.connectSocket = function (token) {
     _this2.streamState.isServerAvailable = false;
     _this2.streamState.isTokenAvailable = false;
     if (_this2.streamState.isStreamJoined && !_this2.streamState.isStreamRunning) _this2.leaveStream(false);
-    if (_this2.socketReconnectCounter >= 5) {
+    if (_this2.socketReconnectCounter >= 10) {
       window.DD_LOGS && DD_LOGS.logger.warn("WebRTC.connectSocket: failed after [".concat(_this2.socketReconnectCounter, "] attempts. Give up."));
-      _this2.streamState.error = 'WEBRTC_ERROR:SOCKET_CONNECT_FAILED';
+      _this2.streamState.error = 'WEBRTC_ERROR:SOCKET_CONNECT_FAILED'; //TODO may be reload page
     } else {
       setTimeout(function () {
         return _this2.waitForServerOnlineAndConnect();
@@ -308,7 +308,7 @@ WebRTC.prototype.startStream = function () {
   this.peerConnection.onconnectionstatechange = function (event) {
     if (_this4.peerConnection.connectionState === 'disconnected') {
       //TODO Try silent reconnect
-      window.DD_LOGS && DD_LOGS.logger.warn('WebRTC.startStream: PeerConnection state change to "disconnected". Stopping stream.');
+      window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.startStream: PeerConnection state change to "disconnected". Stopping stream.');
       _this4.leaveStream(true);
     }
   };
@@ -390,11 +390,11 @@ WebRTC.prototype.startStream = function () {
       }).map(function (line) {
         return line.split(" ")[1].slice(0, -1);
       }));
-      window.DD_LOGS && DD_LOGS.logger.warn("HostCodecs: ".concat(hostCodecs), {
+      window.DD_LOGS && DD_LOGS.logger.debug("HostCodecs: ".concat(hostCodecs), {
         hostCodecs: hostCodecs
       });
     } catch (e) {
-      window.DD_LOGS && DD_LOGS.logger.warn("HostCodecs: ".concat(e.message), e);
+      window.DD_LOGS && DD_LOGS.logger.debug("HostCodecs: ".concat(e.message), e);
     }
     _this4.peerConnection.setRemoteDescription(new RTCSessionDescription({
       type: 'offer',
@@ -410,11 +410,11 @@ WebRTC.prototype.startStream = function () {
         }).map(function (line) {
           return line.split(" ")[1].slice(0, -1);
         }));
-        window.DD_LOGS && DD_LOGS.logger.warn("ClientCodecs: ".concat(clientCodecs), {
+        window.DD_LOGS && DD_LOGS.logger.debug("ClientCodecs: ".concat(clientCodecs), {
           clientCodecs: clientCodecs
         });
       } catch (e) {
-        window.DD_LOGS && DD_LOGS.logger.warn("ClientCodecs: ".concat(e.message), e);
+        window.DD_LOGS && DD_LOGS.logger.debug("ClientCodecs: ".concat(e.message), e);
       }
       _this4.peerConnection.setLocalDescription(answer).then(function () {
         _this4.socket.timeout(5000).emit('CLIENT:ANSWER', {

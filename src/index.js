@@ -2,7 +2,6 @@ import logger from './logger.js';
 import { readFileSync } from 'fs';
 import express from 'express';
 import { Server } from 'socket.io';
-import { instrument } from '@socket.io/admin-ui';
 
 import { nonceHandler } from './modules/nonceHandler.js';
 import socketAuth from './modules/socketAuth.js';
@@ -56,8 +55,7 @@ const expressServer = expressApp.listen(PORT, () => {
 const io = new Server(expressServer, {
   path: "/app/socket",
   transports: ['websocket'],
-  cleanupEmptyChildNamespaces: true,
-  cors: { origin: ['https://admin.socket.io'], credentials: true }
+  cleanupEmptyChildNamespaces: true
 });
 
 process.on('SIGTERM', () => {
@@ -86,10 +84,4 @@ io.on('connection', (socket) => {
   socketCheck(io, socket);
   socketHostHandler(io, socket);
   socketHandlerClient(io, socket);
-});
-
-instrument(io, {
-  readonly: false,
-  mode: "development", //TODO Move to "production"
-  auth: { type: 'basic', username: 'admin', password: process.env.ADMIN_UI_PASSWORD }
 });

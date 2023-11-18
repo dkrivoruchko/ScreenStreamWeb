@@ -68,9 +68,9 @@ WebRTC.prototype.connectSocket = function (token) {
         this.streamState.isTokenAvailable = false;
         if (this.streamState.isStreamJoined && !this.streamState.isStreamRunning) this.leaveStream(false);
 
-        if (this.socketReconnectCounter >= 5) {
+        if (this.socketReconnectCounter >= 10) {
             window.DD_LOGS && DD_LOGS.logger.warn(`WebRTC.connectSocket: failed after [${this.socketReconnectCounter}] attempts. Give up.`);
-            this.streamState.error = 'WEBRTC_ERROR:SOCKET_CONNECT_FAILED';
+            this.streamState.error = 'WEBRTC_ERROR:SOCKET_CONNECT_FAILED'; //TODO may be reload page
         } else {
             setTimeout(() => this.waitForServerOnlineAndConnect(), 3000);
         }
@@ -207,7 +207,7 @@ WebRTC.prototype.startStream = function () {
 
     this.peerConnection.onconnectionstatechange = (event) => {
         if (this.peerConnection.connectionState === 'disconnected') { //TODO Try silent reconnect
-            window.DD_LOGS && DD_LOGS.logger.warn('WebRTC.startStream: PeerConnection state change to "disconnected". Stopping stream.');
+            window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.startStream: PeerConnection state change to "disconnected". Stopping stream.');
             this.leaveStream(true);
         }
     }
@@ -265,9 +265,9 @@ WebRTC.prototype.startStream = function () {
 
         try {
             const hostCodecs = JSON.stringify(hostOffer.offer.split("\n").filter(line => line.startsWith("a=rtpmap:")).map(line => line.split(" ")[1].slice(0, -1)));
-            window.DD_LOGS && DD_LOGS.logger.warn(`HostCodecs: ${hostCodecs}`, { hostCodecs });
+            window.DD_LOGS && DD_LOGS.logger.debug(`HostCodecs: ${hostCodecs}`, { hostCodecs });
         } catch (e) {
-            window.DD_LOGS && DD_LOGS.logger.warn(`HostCodecs: ${e.message}`, e);
+            window.DD_LOGS && DD_LOGS.logger.debug(`HostCodecs: ${e.message}`, e);
         }
 
         this.peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: hostOffer.offer }))
@@ -275,9 +275,9 @@ WebRTC.prototype.startStream = function () {
             .then(answer => {
                 try {
                     const clientCodecs = JSON.stringify(answer.sdp.split("\n").filter(line => line.startsWith("a=rtpmap:")).map(line => line.split(" ")[1].slice(0, -1)));
-                    window.DD_LOGS && DD_LOGS.logger.warn(`ClientCodecs: ${clientCodecs}`, { clientCodecs });
+                    window.DD_LOGS && DD_LOGS.logger.debug(`ClientCodecs: ${clientCodecs}`, { clientCodecs });
                 } catch (e) {
-                    window.DD_LOGS && DD_LOGS.logger.warn(`ClientCodecs: ${e.message}`, e);
+                    window.DD_LOGS && DD_LOGS.logger.debug(`ClientCodecs: ${e.message}`, e);
                 }
 
                 this.peerConnection.setLocalDescription(answer).then(() => {
