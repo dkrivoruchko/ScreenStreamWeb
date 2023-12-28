@@ -1,6 +1,6 @@
 {
     "header-welcome": "Ласкаво просимо до ScreenStream",
-    "stream-about": "<a href=\"https://play.google.com/store/apps/details?id=info.dvkr.screenstream\">Додаток для Android</a> з <a href=\"https://github.com/dkrivoruchko/ScreenStream\">відкритим вихідним кодом</a>, що дозволяє користувачам легко ділитися екраном свого пристрою",
+    "stream-about": "<a href=\"https://play.google.com/store/apps/details?id=info.dvkr.screenstream\">Додаток для Android</a> з <a href=\"https://github.com/dkrivoruchko/ScreenStream\">відкритим кодом</a>, що дозволяє користувачам легко ділитися екраном свого пристрою",
     "stream-message": "Для перегляду екрану введіть ідентифікатор трансляції та пароль",
     "stream-id": "Ідентифікатор трансляції:",
     "client-id": "Ідентифікатор клієнта:",

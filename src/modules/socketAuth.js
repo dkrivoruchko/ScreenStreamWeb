@@ -123,7 +123,6 @@ export default async function (socket, next) {
       socket.data.isHost = true;
       socket.data.isClient = false;
       next();
-      return;
     }
 
   } catch (cause) {
