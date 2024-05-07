@@ -5,7 +5,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <link rel="icon" type="image/x-icon" sizes="any" href="/favicon.ico">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="stylesheet" href="/index.css">
 
   <title>ScreenStream</title>
@@ -28,7 +27,7 @@
     window.DD_LOGS && DD_LOGS.setGlobalContextProperty('version', $PACKAGE_VERSION$);
   </script>
 
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous" async></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous" async></script>
   <script>
     "use strict";
 
@@ -67,7 +66,7 @@
 
   <div id="start-container">
     <img src="/logo.webp" style="width: 160px; height: 160px;" />
-    <h2 data-i18n-key="header-welcome">Welcome to ScreenStream</h2>
+    <h2 data-i18n-key="header-welcome" style="margin-top: 0;">Welcome to ScreenStream</h2>
     <div data-i18n-key="stream-about">The <a href="https://github.com/dkrivoruchko/ScreenStream">open-source</a> <a href="https://play.google.com/store/apps/details?id=info.dvkr.screenstream">Android application</a> that allows users to easily share their device screen</div><br>
 
     <div data-i18n-key="stream-message">To view stream please enter stream Id and Password</div><br>
@@ -116,7 +115,7 @@
 
   <div id="stream-wait-container" style="display: none;">
     <img src="/logo.webp" style="width: 160px; height: 160px;" />
-    <h2>ScreenStream</h2>
+    <h2 style="margin-top: 0;">ScreenStream</h2>
     <p id="stream-wait-container-text" data-i18n-key="stream-waiting">Waiting for host to start the stream</p>
     <p id="stream-wait-stream-id" data-i18n-key="stream-id-header">Stream Id:</p>
     <p id="stream-wait-client-id" style="color: #aaa; font-size:smaller; margin: 16px;">Client Id:</p>

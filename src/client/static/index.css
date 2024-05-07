@@ -53,11 +53,6 @@ body {
     }
 }
 
-#start-container img {
-    box-shadow: 0 0 4px 4px rgba(0, 0, 0, .2);
-    border-radius: 16px
-}
-
 #start-container form {
     display: inline-block
 }
@@ -161,8 +156,6 @@ body {
 }
 
 #streaming-header img {
-    box-shadow: 0 0 2px 2px rgba(0, 0, 0, .2);
-    border-radius: 4px;
     width: 48px
 }
 
@@ -217,11 +210,6 @@ body {
         padding: 30px 20px;
         width: 85%
     }
-}
-
-#stream-wait-container img {
-    box-shadow: 0 0 4px 4px rgba(0, 0, 0, .2);
-    border-radius: 16px
 }
 
 #stream-wait-container button {
