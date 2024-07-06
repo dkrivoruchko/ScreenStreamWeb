@@ -1,6 +1,6 @@
 {
   "name": "screenstream.io",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Server and Web Client for ScreenStream Android App",
   "homepage": "https://screenstream.io",
   "license": "MIT",
@@ -16,14 +16,14 @@
     "start": "node src/index.js"
   },
   "engines": {
-    "npm": "10.7.x",
+    "npm": "10.8.x",
     "node": "22.x"
   },
   "dependencies": {
     "datadog-winston": "^1.6.0",
     "express": "^4.19.0",
     "gtoken": "^7.1.0",
-    "jose": "^5.2.0",
+    "jose": "^5.6.0",
     "socket.io": "^4.7.0",
     "winston": "^3.13.0"
   },
@@ -36,7 +36,7 @@
     "@babel/core": "^7.24.0",
     "@babel/preset-env": "^7.24.0",
     "babel-loader": "^9.1.0",
-    "webpack": "^5.91.0",
+    "webpack": "^5.92.0",
     "webpack-cli": "^5.1.0"
   }
 }
