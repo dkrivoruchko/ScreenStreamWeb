@@ -1,6 +1,11 @@
 export const isStreamIdValid = (id) => typeof id === 'string' && /^\d+$/.test(id) && id.length === 8
 export const isStreamPasswordValid = (password) => typeof password === 'string' && /^[a-zA-Z0-9]+$/.test(password) && password.length === 6
 
+const DEFAULT_ICE_SERVERS = ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302', 'stun:stun4.l.google.com:19302'];
+function getDefaultIceServers() {
+    return DEFAULT_ICE_SERVERS.sort(() => .5 - Math.random()).slice(0, 2).map(server => ({ urls: server }));
+}
+
 export function WebRTC(clientId, streamState, getTurnstileTokenAsync, onNewTrack) {
     this.clientId = clientId;
     this.streamState = streamState;
@@ -9,10 +14,14 @@ export function WebRTC(clientId, streamState, getTurnstileTokenAsync, onNewTrack
 
     this.socket = null;
     this.socketReconnectCounter = 0;
+
+    this.streamPassword = null;
+
     this.peerConnection = null;
     this.hostOfferTimeout = null;
 
-    this.iceServers = ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302', 'stun:stun4.l.google.com:19302'];
+    this.iceServers = getDefaultIceServers();
+
     window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.constructor');
 };
 WebRTC.prototype.isServerOnlineAsync = function () {
@@ -108,7 +117,7 @@ WebRTC.prototype.connectSocket = function (token) {
         callback({ status: 'OK' });
     });
 };
-WebRTC.prototype.joinStream = function (streamId, password) {
+WebRTC.prototype.joinStream = function (streamId, password, attempt = 0) {
     this.streamState.error = null;
 
     if (!isStreamIdValid(streamId)) {
@@ -134,7 +143,7 @@ WebRTC.prototype.joinStream = function (streamId, password) {
         return;
     }
 
-    window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.joinStream: ${streamId}`, { streamId });
+    window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.joinStream: ${streamId}. Attempt: ${attempt}`, { streamId });
     this.streamState.isJoiningStream = true;
 
     window.crypto.subtle.digest('SHA-384', new TextEncoder().encode(this.clientId + streamId + password))
@@ -160,13 +169,19 @@ WebRTC.prototype.joinStream = function (streamId, password) {
 
                 this.streamState.isJoiningStream = false;
                 this.streamState.streamId = streamId;
+                this.streamPassword = password;
                 this.streamState.isStreamJoined = true;
+                if (Array.isArray(response.iceServers) && response.iceServers.length !== 0) {
+                    this.iceServers = response.iceServers;
+                } else {
+                    this.iceServers = getDefaultIceServers();
+                }
 
                 this.socket
                     .off('STREAM:START').off('STREAM:STOP').off('REMOVE:CLIENT').off('REMOVE:STREAM')
                     .on('STREAM:START', () => {
                         window.DD_LOGS && DD_LOGS.logger.debug('WebRTC: receive [STREAM:START]', { socket_event: '[STREAM:START]' });
-                        this.startStream();
+                        this.startStream(attempt);
                     })
                     .on('STREAM:STOP', () => {
                         window.DD_LOGS && DD_LOGS.logger.debug('WebRTC: receive [STREAM:STOP]', { socket_event: '[STREAM:STOP]' });
@@ -185,8 +200,8 @@ WebRTC.prototype.joinStream = function (streamId, password) {
         })
         .catch(error => this.streamState.error = error);
 };
-WebRTC.prototype.startStream = function () {
-    window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.startStream');
+WebRTC.prototype.startStream = function (attempt) {
+    window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.startStream [${attempt}]`);
 
     if (this.peerConnection) {
         window.DD_LOGS && DD_LOGS.logger.warn('WebRTC.startStream: PeerConnection exist. Cleaning it first.');
@@ -197,18 +212,33 @@ WebRTC.prototype.startStream = function () {
 
     this.peerConnection = new RTCPeerConnection({
         bundlePolicy: 'balanced',
-        iceServers: [{ urls: this.iceServers.sort(() => .5 - Math.random()).slice(0, 2) }],
+        iceServers: this.iceServers,
     });
 
     this.hostOfferTimeout = setTimeout(() => {
-        window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.startStream: HOST:OFFER timeout. Leaving stream.');
+        window.DD_LOGS && DD_LOGS.logger.info('WebRTC.startStream: HOST:OFFER timeout. Leaving stream.');
         this.leaveStream(true);
     }, 5000);
 
+    this.peerConnection.oniceconnectionstatechange = (event) => {
+        window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.startStream: PeerConnection: iceConnectionState change to "${event.currentTarget.iceConnectionState}".`);
+    }
+
     this.peerConnection.onconnectionstatechange = (event) => {
-        if (this.peerConnection.connectionState === 'disconnected') { //TODO Try silent reconnect
-            window.DD_LOGS && DD_LOGS.logger.debug('WebRTC.startStream: PeerConnection state change to "disconnected". Stopping stream.');
-            this.leaveStream(true);
+        window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.startStream: PeerConnection: connectionState change to "${event.currentTarget.connectionState}".`);
+
+        if (this.peerConnection.connectionState === 'disconnected' || this.peerConnection.connectionState === 'failed') {
+            this.streamState.isTokenAvailable = false;
+            if (attempt == 0 && this.streamState.isSocketConnected && this.streamState.isServerAvailable && this.streamState.isTokenAvailable) {
+                window.DD_LOGS && DD_LOGS.logger.info('WebRTC.startStream: PeerConnection: Attempting to reconnect...');
+                const streamId = this.streamState.streamId;
+                const password = this.streamPassword;
+                this.leaveStream(true);
+                setTimeout(() => this.joinStream(streamId, password, attempt + 1), 1000);
+            } else {
+                window.DD_LOGS && DD_LOGS.logger.info('WebRTC.startStream: PeerConnection: Reconnection failed. Stopping stream.');
+                this.leaveStream(true);
+            }
         }
     }
 
@@ -332,4 +362,5 @@ WebRTC.prototype.leaveStream = function (notifyServer, forcedByServer = false) {
 
     this.streamState.isStreamJoined = false;
     this.streamState.streamId = null;
+    this.streamPassword = null;
 };

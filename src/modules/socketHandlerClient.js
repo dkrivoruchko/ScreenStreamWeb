@@ -1,4 +1,5 @@
 import logger from '../logger.js';
+import { getIceServers } from './iceServers.js';
 import { isStreamIdValid, getStreamId, getHostSocket } from './stream.js';
 
 export default function (io, socket) {
@@ -53,6 +54,18 @@ export default function (io, socket) {
             return;
         }
 
+        // Disconnect all other sockets for this clientId
+        const allSockets = await io.fetchSockets();
+        allSockets
+            .filter(item => item.id !== socket.id && item.data && item.data.isClient === true && item.data.clientId === socket.data.clientId)
+            .forEach(oldClientSocket => {
+                if (oldClientSocket.connected) {
+                    logger.debug(JSON.stringify({ socket_event: event, socket: oldClientSocket.id, streamId: payload.streamId, clientId: oldClientSocket.data.clientId, host_socket: hostSocket.id, message: 'Got new client. Disconnecting old socket' }));
+                    oldClientSocket.rooms.forEach(room => { if (room != oldClientSocket.id) oldClientSocket.leave(room); });
+                    oldClientSocket.disconnect()
+                }
+            });
+
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: payload.streamId, clientId: socket.data.clientId, host_socket: hostSocket.id, message: 'Got new client. Sending to host' }));
 
         socket.removeAllListeners('CLIENT:ANSWER');
@@ -64,7 +77,9 @@ export default function (io, socket) {
         socket.removeAllListeners('STREAM:LEAVE');
         socket.on('STREAM:LEAVE', streamLeave);
 
-        hostSocket.emit('STREAM:JOIN', { clientId: socket.data.clientId, passwordHash: payload.passwordHash }, response => {
+        const iceServers = getIceServers(socket.data.clientId);
+
+        hostSocket.emit('STREAM:JOIN', { clientId: socket.data.clientId, passwordHash: payload.passwordHash, iceServers }, response => {
             if (!socket.connected) {
                 logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: payload.streamId, host_socket: hostSocket.id, message: 'STREAM:JOIN: Client socket disconnected. Ignoring' }));
                 return;
@@ -78,7 +93,7 @@ export default function (io, socket) {
                 socket.data.errorCounter += 1;
                 callback({ status: response.status });
             } else {
-                callback({ status: 'OK' });
+                callback({ status: 'OK', iceServers });
 
                 socket.join(payload.streamId);
             }
