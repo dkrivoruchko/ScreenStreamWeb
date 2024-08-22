@@ -4,6 +4,8 @@ import { Buffer } from 'node:buffer';
 import { createHmac } from 'crypto';
 
 const SERVER_ORIGIN = process.env.SERVER_ORIGIN;
+const isPROD = SERVER_ORIGIN === 'screenstream.io';
+
 const TURN_SHARED_SECRET = process.env.TURN_SHARED_SECRET;
 
 const GOOGLE_STUN_SERVERS_ADDRESS = [
@@ -75,10 +77,7 @@ function updateActiveServers() {
 updateActiveServers();
 
 export function getIceServers(username) {
-    const stun = getStunServer();
-    const turn = getTurnServer(username);
-    return [stun, getStunServer()];
-    // return [stun, turn];
+    return [getStunServer(), getTurnServer(username)];
 };
 
 function getStunServer() {

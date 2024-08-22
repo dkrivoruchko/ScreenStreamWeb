@@ -220,16 +220,44 @@ WebRTC.prototype.startStream = function (attempt) {
         this.leaveStream(true);
     }, 5000);
 
-    this.peerConnection.oniceconnectionstatechange = (event) => {
+    this.peerConnection.oniceconnectionstatechange = async (event) => {
         window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.startStream: PeerConnection: iceConnectionState change to "${event.currentTarget.iceConnectionState}".`);
+        if (this.peerConnection.iceConnectionState !== 'connected' && this.peerConnection.iceConnectionState !== 'completed') return;
+
+        const stats = await this.peerConnection.getStats();
+        const hasTurnServer = this.iceServers.some(server => server.urls.startsWith('turn:'));
+
+        stats.forEach(report => {
+            if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+                const localCandidate = stats.get(report.localCandidateId);
+                const remoteCandidate = stats.get(report.remoteCandidateId);
+
+                if (localCandidate && remoteCandidate) {
+                    const localType = localCandidate.candidateType;
+                    const remoteType = remoteCandidate.candidateType;
+
+                    let relayProtocol = 'UNKNOWN';
+
+                    if (localType === 'relay' || remoteType === 'relay') {
+                        relayProtocol = 'TURN';
+                    } else if (['srflx', 'prflx'].includes(localType) || ['srflx', 'prflx'].includes(remoteType)) {
+                        relayProtocol = 'STUN';
+                    } else if (localType === 'host' || remoteType === 'host') {
+                        relayProtocol = 'HOST';
+                    }
+
+                    window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.startStream: PeerConnection relay protocol: ${relayProtocol}`, { relayProtocol, hasTurnServer, localType, remoteType });
+                }
+            }
+        });
+
     }
 
     this.peerConnection.onconnectionstatechange = (event) => {
         window.DD_LOGS && DD_LOGS.logger.debug(`WebRTC.startStream: PeerConnection: connectionState change to "${event.currentTarget.connectionState}".`);
 
         if (this.peerConnection.connectionState === 'disconnected' || this.peerConnection.connectionState === 'failed') {
-            this.streamState.isTokenAvailable = false;
-            if (attempt == 0 && this.streamState.isSocketConnected && this.streamState.isServerAvailable && this.streamState.isTokenAvailable) {
+            if (attempt == 0 && this.streamState.isSocketConnected && this.streamState.isServerAvailable) {
                 window.DD_LOGS && DD_LOGS.logger.info('WebRTC.startStream: PeerConnection: Attempting to reconnect...');
                 const streamId = this.streamState.streamId;
                 const password = this.streamPassword;

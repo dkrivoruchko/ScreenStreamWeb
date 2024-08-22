@@ -112,7 +112,7 @@ export default async function (socket, next) {
         if (!payload.appIntegrity.certificateSha256Digest.includes(ANDROID_APP_CERT256)) throw new Error('APP_INTEGRITY_WRONG_DIGEST');
         // Don't check for now tokenPayload.appIntegrity.versionCode
 
-        logger.warn(JSON.stringify({ socket: socket.id, message: "Host Token OK: " + device + "\n" + JSON.stringify(payload) }));
+        logger.debug(JSON.stringify({ socket: socket.id, message: "Host Token OK: " + device + "\n" + JSON.stringify(payload) }));
 
         // accountDetails 
         // Don't check for now

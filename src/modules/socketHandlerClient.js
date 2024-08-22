@@ -41,7 +41,7 @@ export default function (io, socket) {
         }
 
         if (!hostSocket) {
-            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: payload.streamId, clientId: socket.data.clientId, error: 'NO_STREAM_HOST_FOUND', message: 'No host for stream found' }));
+            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: payload.streamId, clientId: socket.data.clientId, error: 'NO_STREAM_HOST_FOUND', message: 'No host for stream found' }));
 
             socket.data.errorCounter += 1;
             callback({ status: 'ERROR:NO_STREAM_HOST_FOUND' });
