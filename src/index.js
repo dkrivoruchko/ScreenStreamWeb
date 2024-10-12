@@ -45,7 +45,7 @@ const expressApp = express()
   .get('/app/ping', nocache, (req, res) => { res.sendStatus(204) })
   .get('/app/nonce', nocache, nonceHandler)
   .get('/', revalidate, (req, res) => { if (req.hostname !== SERVER_ORIGIN) res.redirect(301, `https://${SERVER_ORIGIN}`); else res.send(index); })
-  .get('*', (req, res) => res.sendStatus(404));
+  .get('/*', (req, res) => res.sendStatus(404));
 
 const expressServer = expressApp.listen(PORT, () => {
   logger.warn(`Listening on ${PORT}`);
