@@ -1,75 +1,85 @@
-export function Locales(supportedTags, browserLanguages) {
-    this.defaultLocale = 'en';
-    this.selectedLocale = this.lookup(supportedTags, browserLanguages).toLowerCase();
-    this.translations = {};
-    this.defaultTranslations = {};
+function log(level, message, context = {}) {
+    if (window.DD_LOGS && DD_LOGS.logger) {
+        DD_LOGS.logger[level](message, context);
+    } else {
+        console[level](message, context);
+    }
 }
-Locales.prototype.fetchTranslation = function () {
-    return new Promise((resolve, reject) => {
-        fetch(`/lang/${this.selectedLocale}.json`)
-            .then(response => response.json())
-            .then(translations => {
-                this.translations = translations;
-                if (this.selectedLocale === this.defaultLocale) {
-                    resolve();
-                    return;
-                }
 
-                fetch(`/lang/${this.defaultLocale}.json`)
-                    .then(response => response.json())
-                    .then(defaultTranslations => {
-                        this.defaultTranslations = defaultTranslations;
-                        resolve();
-                    })
-                    .catch(error => {
-                        window.DD_LOGS && DD_LOGS.logger.warn(`Locales: fetchDefaultTranslation for ${this.defaultLocale} failed: ${error.message}`, { error });
-                        reject(error);
-                    });
-            })
-            .catch(error => {
-                window.DD_LOGS && DD_LOGS.logger.warn(`Locales: fetchTranslation for ${this.selectedLocale} failed: ${error.message}`, { error });
-                reject(error);
-            });
-    });
-};
-Locales.prototype.getTranslationByKey = function (key) {
-    return this.translations[key] || this.defaultTranslations[key];
-}
-Locales.prototype.translateDocument = function () {
-    document.querySelectorAll('[data-i18n-key]').forEach((element) => {
-        const value = this.getTranslationByKey(element.getAttribute('data-i18n-key'));
-        if (value) element.innerHTML = value;
-    });
-};
-Locales.prototype.lookup = function (tags, right) {
-    const check = function (tag, range) {
-        let right = range
-        while (true) {
-            if (right === '*' || tag === right) return true
-            let index = right.lastIndexOf('-')
-            if (index < 0) return false
-            if (right.charAt(index - 2) === '-') index -= 2
-            right = right.slice(0, index)
-        }
+export class Locales {
+    constructor(supportedTags, browserLanguages) {
+        this.defaultLocale = 'en';
+        this.selectedLocale = this.lookup(supportedTags, browserLanguages).toLowerCase();
+        this.translations = {};
+        this.defaultTranslations = {};
     }
 
-    let left = tags;
-    let rightIndex = -1
-
-    while (++rightIndex < right.length) {
-        const range = right[rightIndex].toLowerCase();
-
-        let leftIndex = -1;
-        const next = [];
-
-        while (++leftIndex < left.length) {
-            if (check(left[leftIndex].toLowerCase(), range)) {
-                return left[leftIndex];
-            } else {
-                next.push(left[leftIndex]);
+    async fetchTranslation() {
+        try {
+            const response = await fetch(`/lang/${this.selectedLocale}.json`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch translations for locale '${this.selectedLocale}'.`);
             }
+            this.translations = await response.json();
+
+            if (this.selectedLocale !== this.defaultLocale) {
+                const defaultResponse = await fetch(`/lang/${this.defaultLocale}.json`);
+                if (!defaultResponse.ok) {
+                    throw new Error(`Failed to fetch default translations for locale '${this.defaultLocale}'.`);
+                }
+                this.defaultTranslations = await defaultResponse.json();
+            }
+        } catch (error) {
+            log('warn', `Locales: fetchTranslation failed: ${error.message}`, { error });
+            throw error;
         }
-        left = next;
     }
-    return this.defaultLocale;
-};
+
+    getTranslationByKey(key) {
+        return this.translations[key] || this.defaultTranslations[key];
+    }
+
+    translateDocument() {
+        document.querySelectorAll('[data-i18n-key]').forEach((element) => {
+            const key = element.getAttribute('data-i18n-key');
+            const value = this.getTranslationByKey(key);
+            if (value) {
+                element.innerHTML = value;
+            } else {
+                log('warn', `Translation missing for key: '${key}'`);
+            }
+        });
+    }
+
+    lookup(tags, ranges) {
+        const checkTagInRange = function (tag, range) {
+            let currentRange = range;
+
+            while (currentRange) {
+                if (currentRange === '*' || tag === currentRange) return true;
+                const index = currentRange.lastIndexOf('-');
+                if (index < 0) return false;
+                currentRange = currentRange.slice(0, currentRange.charAt(index - 2) === '-' ? index - 2 : index);
+            }
+        };
+
+        let remainingTags = tags;
+
+        for (let i = 0; i < ranges.length; i++) {
+            const range = ranges[i].toLowerCase();
+            const nextTags = [];
+
+            for (let j = 0; j < remainingTags.length; j++) {
+                const tag = remainingTags[j].toLowerCase();
+                if (checkTagInRange(tag, range)) {
+                    return remainingTags[j];
+                } else {
+                    nextTags.push(remainingTags[j]);
+                }
+            }
+            remainingTags = nextTags;
+        }
+
+        return this.defaultLocale;
+    }
+}
