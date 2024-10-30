@@ -2,7 +2,7 @@ import winston from 'winston';
 import DatadogWinston from 'datadog-winston';
 
 const DD_API_KEY = process.env.DD_API_KEY;
-const HEROKU_APP_NAME = process.env.HEROKU_APP_NAME;
+const APP_NAME = process.env.APP_NAME;
 
 const logger = winston.createLogger({
     level: 'debug',
@@ -13,8 +13,8 @@ const logger = winston.createLogger({
 logger.add(
     new DatadogWinston({
         apiKey: DD_API_KEY,
-        hostname: HEROKU_APP_NAME,
-        service: HEROKU_APP_NAME,
+        hostname: APP_NAME,
+        service: APP_NAME,
         ddsource: 'nodejs',
     })
 );

@@ -27,7 +27,7 @@
     window.DD_LOGS && DD_LOGS.setGlobalContextProperty('version', $PACKAGE_VERSION$);
   </script>
 
-  <script src="https://cdn.socket.io/4.8.0/socket.io.min.js" crossorigin="anonymous" async></script>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous" async></script>
   <script>
     "use strict";
 
@@ -44,7 +44,7 @@
           },
           'error-callback': function errorCallback(error_code) {
             window.DD_LOGS && DD_LOGS.logger.error("Turnstile error: ".concat(error_code), { error: error_code });
-            if (error_code == "200100") {
+            if (error_code === "200100") {
               window.streamState.error = "ERROR:TURNSTILE:200100";
               window.turnstile.remove(turnstileWidgetId);
               return true;
