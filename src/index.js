@@ -14,6 +14,8 @@ const PORT = process.env.PORT || 5000;
 
 const isPROD = SERVER_ORIGIN === 'screenstream.io';
 
+console.error("SERVER_ORIGIN", SERVER_ORIGIN);
+
 const index = readFileSync('src/client/index.html').toString()
   .replace('$DD_SERVICE$', `WebClient${isPROD ? "-PROD" : "-DEV"}`)
   .replace('$DD_HANDLER$', isPROD ? '["http"]' : '["http", "console"]')
