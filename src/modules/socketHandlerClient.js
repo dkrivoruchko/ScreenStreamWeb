@@ -79,7 +79,13 @@ export default function (io, socket) {
 
         const iceServers = getIceServers(socket.data.clientId);
 
-        hostSocket.emit('STREAM:JOIN', { clientId: socket.data.clientId, passwordHash: payload.passwordHash, iceServers }, response => {
+        hostSocket.timeout(5000).emit('STREAM:JOIN', { clientId: socket.data.clientId, passwordHash: payload.passwordHash, iceServers }, (err, response) => {
+            if (err) {
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
+                return;
+            }
+
             if (!socket.connected) {
                 logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: payload.streamId, host_socket: hostSocket.id, message: 'STREAM:JOIN: Client socket disconnected. Ignoring' }));
                 return;
@@ -149,7 +155,13 @@ export default function (io, socket) {
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: socket.data.clientId, host_socket: hostSocket.id, message: 'Relaying to host' }));
 
-        hostSocket.emit('CLIENT:ANSWER', { clientId: socket.data.clientId, answer: payload.answer }, response => {
+        hostSocket.timeout(5000).emit('CLIENT:ANSWER', { clientId: socket.data.clientId, answer: payload.answer }, (err, response) => {
+            if (err) {
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
+                return;
+            }
+
             if (!socket.connected) {
                 logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, host_socket: hostSocket.id, message: 'CLIENT:ANSWER: Client socket disconnected. Ignoring' }));
                 return;
@@ -214,7 +226,13 @@ export default function (io, socket) {
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: socket.data.clientId, host_socket: hostSocket.id, message: 'Relaying to host' }));
 
-        hostSocket.emit('CLIENT:CANDIDATE', { clientId: socket.data.clientId, candidate: payload.candidate }, response => {
+        hostSocket.timeout(5000).emit('CLIENT:CANDIDATE', { clientId: socket.data.clientId, candidate: payload.candidate }, (err, response) => {
+            if (err) {
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
+                return;
+            }
+
             if (!socket.connected) {
                 logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, host_socket: hostSocket.id, message: 'CLIENT:CANDIDATE: Client socket disconnected. Ignoring' }));
                 return;
@@ -280,7 +298,13 @@ export default function (io, socket) {
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socketId, streamId, clientId, host_socket: hostSocket.id, message: 'Relaying to host' }));
 
-        hostSocket.emit('STREAM:LEAVE', { clientId }, response => {
+        hostSocket.timeout(5000).emit('STREAM:LEAVE', { clientId }, (err, response) => {
+            if (err) {
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
+                return;
+            }
+
             if (!socket.connected) {
                 logger.debug(JSON.stringify({ socket_event: event, socket: socketId, streamId, clientId, host_socket: hostSocket.id, message: 'STREAM:LEAVE: Client socket disconnected. Ignoring' }));
                 return;

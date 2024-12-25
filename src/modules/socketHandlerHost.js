@@ -14,92 +14,108 @@ export default function (io, socket) {
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, payload, message: 'New stream create request' }));
 
-        if (!payload || !payload.jwt) {
-            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_JWT_SET', message: 'Bad stream create request' }));
-            callback({ status: 'ERROR:NO_JWT_SET' });
-            return;
+        if (socket.data.handshakeInProgress) {
+            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'HANDSHAKE_IN_PROGRESS' }));
+            return callback({ status: 'ERROR:HANDSHAKE_IN_PROGRESS' });
         }
 
-        if (socket.data.streamId) {
-            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'STREAM_ID_ALREADY_SET', message: 'Bad stream state' }));
-            callback({ status: 'ERROR:STREAM_ID_ALREADY_SET' });
-            return;
-        }
-
-        let pubKey;
-        let requestedStreamId;
         try {
-            const claims = jose.decodeJwt(payload.jwt);
-            const ecPublicKey = await jose.importSPKI(claims.pubKey, 'ES256');
-            const verifyResult = await jose.jwtVerify(payload.jwt, ecPublicKey, { audience: SERVER_ORIGIN, issuer: ANDROID_APP_PACKAGE });
+            socket.data.handshakeInProgress = true;
 
-            if (verifyResult.payload.streamId) {
-                if (typeof verifyResult.payload.streamId !== 'string') throw Error('BAD_STREAM_ID1');
-                requestedStreamId = verifyResult.payload.streamId.trim();
-                if (isStreamIdValid(requestedStreamId) !== true) throw Error('BAD_STREAM_ID2');
+            if (!payload || !payload.jwt) {
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'NO_JWT_SET', message: 'Bad stream create request' }));
+                callback({ status: 'ERROR:NO_JWT_SET' });
+                return;
             }
 
-            if (!verifyResult.payload.pubKey || typeof verifyResult.payload.pubKey !== 'string' || verifyResult.payload.pubKey.trim().length === 0) throw Error('BAD_PUB_KEY');
-            pubKey = verifyResult.payload.pubKey;
-        } catch (cause) {
-            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'JWT_VERIFICATION_FILED', message: cause.message, cause }));
-            callback({ status: 'ERROR:JWT_VERIFICATION_FILED' });
-            return;
-        }
+            if (socket.data.streamId) {
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'STREAM_ID_ALREADY_SET', message: 'Bad stream state' }));
+                callback({ status: 'ERROR:STREAM_ID_ALREADY_SET' });
+                return;
+            }
 
-        let streamId;
-        if (requestedStreamId) {
-            const socketsInRequestedStream = await io.in(requestedStreamId).fetchSockets();
-            const existingHostSockets = socketsInRequestedStream.filter(item => item.data && item.data.isHost === true);
+            let pubKey;
+            let requestedStreamId;
+            try {
+                const claims = jose.decodeJwt(payload.jwt);
+                if (!claims || typeof claims !== 'object') throw new Error('INVALID_JWT_FORMAT');
 
-            if (existingHostSockets.length > 1) { // This is very bad
-                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TOO_MANY_HOSTS', message: `TOO_MANY_HOSTS: ${existingHostSockets.map(s => s.id)}` }));
-                streamId = createNewStreamId(io);
-            } else if (existingHostSockets.length === 1) {
-                if (existingHostSockets[0].data.pubKey === pubKey) {
-                    streamId = requestedStreamId;
-                    logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Disconnecting previous host socket: ${existingHostSockets[0].id}` }));
-                    existingHostSockets[0].disconnect();
-                } else {
-                    streamId = createNewStreamId(io);
+                const pubKeyStr = claims.pubKey;
+                if (typeof pubKeyStr !== 'string') throw new Error('INVALID_PUBKEY_FORMAT');
+
+                const ecPublicKey = await jose.importSPKI(pubKeyStr, 'ES256');
+                const verifyResult = await jose.jwtVerify(payload.jwt, ecPublicKey, { audience: SERVER_ORIGIN, issuer: ANDROID_APP_PACKAGE });
+
+                if ('streamId' in verifyResult.payload) {
+                    if (typeof verifyResult.payload.streamId !== 'string') throw new Error('BAD_STREAM_ID1');
+                    requestedStreamId = verifyResult.payload.streamId.trim();
+                    if (!isStreamIdValid(requestedStreamId)) throw new Error('BAD_STREAM_ID2');
                 }
-            } else if (existingHostSockets.length === 0) {
-                streamId = requestedStreamId;
+
+                if (!verifyResult.payload.pubKey || typeof verifyResult.payload.pubKey !== 'string' || verifyResult.payload.pubKey.trim().length === 0) throw new Error('BAD_PUB_KEY');
+                pubKey = verifyResult.payload.pubKey;
+            } catch (cause) {
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'JWT_VERIFICATION_FILED', message: cause.message, cause }));
+                callback({ status: 'ERROR:JWT_VERIFICATION_FILED' });
+                return;
             }
-        } else {
-            streamId = createNewStreamId(io);
+
+            let streamId;
+            if (requestedStreamId) {
+                const socketsInRequestedStream = await io.in(requestedStreamId).fetchSockets();
+                const existingHostSockets = socketsInRequestedStream.filter(item => item.data && item.data.isHost === true);
+
+                if (existingHostSockets.length > 1) { // This is very bad
+                    logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TOO_MANY_HOSTS', message: `TOO_MANY_HOSTS: ${existingHostSockets.map(s => s.id)}` }));
+                    streamId = createNewStreamId(io);
+                } else if (existingHostSockets.length === 1) {
+                    if (existingHostSockets[0].data.pubKey === pubKey) {
+                        streamId = requestedStreamId;
+                        logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Disconnecting previous host socket: ${existingHostSockets[0].id}` }));
+                        existingHostSockets[0].disconnect();
+                    } else {
+                        streamId = createNewStreamId(io);
+                    }
+                } else if (existingHostSockets.length === 0) {
+                    streamId = requestedStreamId;
+                }
+            } else {
+                streamId = createNewStreamId(io);
+            }
+
+            if (!socket.connected) {
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Socket not connected. Ignoring.' }));
+                return;
+            }
+
+            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Set as host for stream: ${streamId}` }));
+
+            socket.removeAllListeners('STREAM:REMOVE');
+            socket.on('STREAM:REMOVE', removeStream);
+
+            socket.removeAllListeners('STREAM:START');
+            socket.on('STREAM:START', startStream);
+
+            socket.removeAllListeners('STREAM:STOP');
+            socket.on('STREAM:STOP', stopStream);
+
+            socket.removeAllListeners('HOST:OFFER');
+            socket.on('HOST:OFFER', hostOffer);
+
+            socket.removeAllListeners('HOST:CANDIDATE');
+            socket.on('HOST:CANDIDATE', hostCandidate);
+
+            socket.removeAllListeners('REMOVE:CLIENT');
+            socket.on('REMOVE:CLIENT', removeClient);
+
+            socket.data.streamId = streamId;
+            socket.data.pubKey = pubKey;
+            socket.join(streamId);
+
+            callback({ status: 'OK', streamId });
+        } finally {
+            socket.data.handshakeInProgress = false;
         }
-
-        if (!socket.connected) {
-            logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, message: 'Socket not connected. Ignoring.' }));
-            return;
-        }
-
-        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, message: `Set as host for stream: ${streamId}` }));
-
-        socket.removeAllListeners('STREAM:REMOVE');
-        socket.on('STREAM:REMOVE', removeStream);
-
-        socket.removeAllListeners('STREAM:START');
-        socket.on('STREAM:START', startStream);
-
-        socket.removeAllListeners('STREAM:STOP');
-        socket.on('STREAM:STOP', stopStream);
-
-        socket.removeAllListeners('HOST:OFFER');
-        socket.on('HOST:OFFER', hostOffer);
-
-        socket.removeAllListeners('HOST:CANDIDATE');
-        socket.on('HOST:CANDIDATE', hostCandidate);
-
-        socket.removeAllListeners('REMOVE:CLIENT');
-        socket.on('REMOVE:CLIENT', removeClient);
-
-        socket.data.streamId = streamId;
-        socket.data.pubKey = pubKey;
-        socket.join(streamId);
-
-        callback({ status: 'OK', streamId });
     }
 
     socket.removeAllListeners('STREAM:CREATE');
@@ -235,7 +251,13 @@ export default function (io, socket) {
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
-        clientSocket.emit('HOST:OFFER', { offer: payload.offer }, response => {
+        clientSocket.timeout(5000).emit('HOST:OFFER', { offer: payload.offer }, (err, response) => {
+            if (err) {
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
+                return;
+            }
+
             if (!socket.connected) {
                 logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, clientId: payload.clientId, client_socket: clientSocket.id, message: 'HOST:OFFER Host socket disconnected. Ignoring' }));
                 return;
@@ -287,7 +309,13 @@ export default function (io, socket) {
 
         const candidates = payload.candidates ? payload.candidates : [payload.candidate];
 
-        clientSocket.emit('HOST:CANDIDATE', { candidates: candidates }, response => {
+        clientSocket.timeout(5000).emit('HOST:CANDIDATE', { candidates }, (err, response) => {
+            if (err) {
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
+                return;
+            }
+
             if (!socket.connected) {
                 logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, clientId: payload.clientId, client_socket: clientSocket.id, message: 'HOST:CANDIDATE Host socket disconnected. Ignoring' }));
                 return;
@@ -330,7 +358,11 @@ export default function (io, socket) {
             if (clientSocket.connected) {
                 clientSocket.rooms.forEach(room => { if (room != clientSocket.id) clientSocket.leave(room); });
 
-                clientSocket.emit('REMOVE:CLIENT', response => {
+                clientSocket.timeout(5000).emit('REMOVE:CLIENT', (err, response) => {
+                    if (err) {
+                        logger.warn(JSON.stringify({ socket_event: '[REMOVE:CLIENT]', socket: clientSocket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                        return;
+                    }
                     logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: clientSocket.data.clientId, client_socket: clientSocket.id, message: `REMOVE:CLIENT Client response: ${response.status}` }));
                 });
             }

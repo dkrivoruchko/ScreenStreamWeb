@@ -37,11 +37,36 @@ const expressApp = express()
   .set('x-powered-by', false)
   .set('trust proxy', true)
   .set('etag', false)
-  .use(express.static('src/client/static', { index: false }))
   .use((req, res, next) => {
-    res.append('Access-Control-Allow-Origin', ['https://www.datadoghq-browser-agent.com', 'https://logs.browser-intake-datadoghq.com', 'https://cdn.socket.io', 'https://challenges.cloudflare.com']);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Content-Security-Policy', [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://cdn.socket.io https://www.datadoghq-browser-agent.com https://challenges.cloudflare.com https://static.cloudflareinsights.com",
+      "style-src 'self' 'unsafe-inline'",
+      "connect-src 'self' wss: https://browser-intake-datadoghq.com https://logs.browser-intake-datadoghq.com",
+      "frame-src 'self' https://challenges.cloudflare.com",
+      "block-all-mixed-content"
+    ].join('; '));
     next();
   })
+  .use((req, res, next) => {
+    const allowedOrigins = [
+      'https://www.datadoghq-browser-agent.com',
+      'https://logs.browser-intake-datadoghq.com',
+      'https://cdn.socket.io',
+      'https://challenges.cloudflare.com'
+    ];
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+  })
+  .use(express.static('src/client/static', { index: false }))
   .get('/app/ping', nocache, (req, res) => { res.sendStatus(204) })
   .get('/app/nonce', nocache, nonceHandler)
   .get('/', revalidate, (req, res) => { if (req.hostname !== SERVER_ORIGIN) res.redirect(301, `https://${SERVER_ORIGIN}`); else res.send(index); })
@@ -59,12 +84,16 @@ const io = new Server(expressServer, {
 });
 
 process.on('SIGTERM', () => {
-  logger.warn('SIGTERM signal received: Closing HTTP server');
-  console.warn('SIGTERM signal received: Closing HTTP server');
+  const forceClose = setTimeout(() => {
+    logger.error('Force closing server after timeout');
+    process.exit(1);
+  }, 10000);
+
   io.disconnectSockets(true);
   expressServer.close(() => {
-    logger.warn('HTTP server closed');
+    clearTimeout(forceClose);
     console.warn('HTTP server closed');
+    process.exit(0);
   });
 });
 
@@ -77,6 +106,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', async (reason, description) => {
     logger.debug(JSON.stringify({ socket_event: "[disconnect]", socket: socket.id, message: reason + "/" + description }));
+    socket.removeAllListeners();
     socket.data = undefined;
   });
 
