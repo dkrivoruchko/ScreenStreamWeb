@@ -3,9 +3,17 @@ import logger from '../logger.js';
 const validClientEvents = ['STREAM:JOIN', 'CLIENT:ANSWER', 'CLIENT:CANDIDATE', 'STREAM:LEAVE'];
 const validHostEvents = ['STREAM:CREATE', 'STREAM:REMOVE', 'STREAM:START', 'HOST:OFFER', 'HOST:CANDIDATE', 'STREAM:STOP', 'REMOVE:CLIENT'];
 
+const MAX_ERRORS_PER_SOCKET = 10;
+const MAX_PAYLOAD_SIZE = 1024 * 1024; // 1MB
+
 export default function (io, socket) {
-    socket.onAny(async event => {
+    socket.onAny(async (event, ...args) => {
         try {
+            const payloadSize = JSON.stringify(args).length;
+            if (payloadSize > MAX_PAYLOAD_SIZE) {
+                logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'PAYLOAD_TOO_LARGE', size: payloadSize }));
+                throw new Error('PAYLOAD_TOO_LARGE');
+            }
 
             if (!socket.data || (socket.data.isClient !== true && socket.data.isHost !== true)) {
                 logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'UNVERIFIED_SOCKET', message: "Unverified socket. Disconnecting" }));
@@ -28,7 +36,7 @@ export default function (io, socket) {
                     throw new Error('UNKNOWN_CLIENT_EVENT');
                 }
 
-                if (socket.data.errorCounter > 8) {
+                if (socket.data.errorCounter >= MAX_ERRORS_PER_SOCKET) {
                     logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'ERROR_LIMIT_REACHED', message: "Client error limit reached. Disconnecting" }));
                     throw new Error('ERROR_LIMIT_REACHED');
                 }

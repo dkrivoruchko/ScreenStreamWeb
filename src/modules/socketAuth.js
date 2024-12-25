@@ -13,6 +13,11 @@ const TURNSTYLE_SECRET_KEY = process.env.TURNSTYLE_SECRET_KEY;
 
 const HOST_TOKEN_TIMEOUT = 60 * 60 * 1000; // 60 minutes
 
+const AUTH_TIMEOUT = 5000; // 5 seconds
+
+const MAX_AUTH_ATTEMPTS = 5;
+const authAttempts = new Map(); // IP -> {count, lastAttempt}
+
 // https://github.com/googleapis/node-gtoken
 const gtoken = new GoogleToken({
   email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -22,6 +27,27 @@ const gtoken = new GoogleToken({
 });
 
 export default async function (socket, next) {
+  const ip = socket.handshake.address;
+  const attempts = authAttempts.get(ip) || { count: 0, lastAttempt: 0 };
+
+  // Rate limiting
+  if (attempts.count >= MAX_AUTH_ATTEMPTS) {
+    const timeSinceLastAttempt = Date.now() - attempts.lastAttempt;
+    if (timeSinceLastAttempt < 60000) { // 1 minute
+      next(new Error('Too many authentication attempts'));
+      return;
+    }
+    attempts.count = 0;
+  }
+
+  attempts.count++;
+  attempts.lastAttempt = Date.now();
+  authAttempts.set(ip, attempts);
+
+  const timeoutId = setTimeout(() => {
+    next(new Error('Authentication timeout'));
+  }, AUTH_TIMEOUT);
+
   try {
     const hostToken = socket.handshake.auth.hostToken;
     const clientToken = socket.handshake.auth.clientToken;
@@ -52,6 +78,7 @@ export default async function (socket, next) {
       socket.data.isClient = true;
       socket.data.clientId = outcome.cdata;
 
+      clearTimeout(timeoutId);
       next();
       return;
     }
@@ -122,11 +149,13 @@ export default async function (socket, next) {
 
       socket.data.isHost = true;
       socket.data.isClient = false;
+      clearTimeout(timeoutId);
       next();
     }
 
   } catch (cause) {
     logger.warn(JSON.stringify({ socket: socket.id, error: 'ERROR:TOKEN_VERIFICATION_FAILED', message: cause.message }));
+    clearTimeout(timeoutId);
     next(new Error(`ERROR:TOKEN_VERIFICATION_FAILED:${cause.message}`));
   }
 

@@ -1,5 +1,6 @@
 const STREAM_ID_LENGTH = 8;
 const STREAM_ID_CHARACTERS = '0123456789';
+const MAX_ROOM_FETCH_RETRIES = 3;
 
 export function createNewStreamId(io) {
     let newId;
@@ -23,6 +24,17 @@ export function getStreamId(socket) {
 }
 
 export async function getHostSocket(io, streamId) {
-    const socketsInStream = await io.in(streamId).fetchSockets();
-    return socketsInStream.find(item => item.data && item.data.isHost === true);
+    let retries = 0;
+    while (retries < MAX_ROOM_FETCH_RETRIES) {
+        try {
+            const socketsInStream = await io.in(streamId).fetchSockets();
+            return socketsInStream.find(item => item.data?.isHost === true);
+        } catch (error) {
+            retries++;
+            if (retries === MAX_ROOM_FETCH_RETRIES) return null;
+
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+    return null;
 }
