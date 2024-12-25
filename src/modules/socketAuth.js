@@ -15,7 +15,7 @@ const HOST_TOKEN_TIMEOUT = 60 * 60 * 1000; // 60 minutes
 
 const AUTH_TIMEOUT = 5000; // 5 seconds
 
-const MAX_AUTH_ATTEMPTS = 5;
+const MAX_AUTH_ATTEMPTS = 10;
 const authAttempts = new Map(); // IP -> {count, lastAttempt}
 
 // https://github.com/googleapis/node-gtoken
