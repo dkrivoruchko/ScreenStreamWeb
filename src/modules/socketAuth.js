@@ -15,9 +15,6 @@ const HOST_TOKEN_TIMEOUT = 60 * 60 * 1000; // 60 minutes
 
 const AUTH_TIMEOUT = 5000; // 5 seconds
 
-const MAX_AUTH_ATTEMPTS = 10;
-const authAttempts = new Map(); // IP -> {count, lastAttempt}
-
 // https://github.com/googleapis/node-gtoken
 const gtoken = new GoogleToken({
   email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -27,23 +24,6 @@ const gtoken = new GoogleToken({
 });
 
 export default async function (socket, next) {
-  const ip = socket.handshake.address;
-  const attempts = authAttempts.get(ip) || { count: 0, lastAttempt: 0 };
-
-  // Rate limiting
-  if (attempts.count >= MAX_AUTH_ATTEMPTS) {
-    const timeSinceLastAttempt = Date.now() - attempts.lastAttempt;
-    if (timeSinceLastAttempt < 60000) { // 1 minute
-      next(new Error('Too many authentication attempts'));
-      return;
-    }
-    attempts.count = 0;
-  }
-
-  attempts.count++;
-  attempts.lastAttempt = Date.now();
-  authAttempts.set(ip, attempts);
-
   const timeoutId = setTimeout(() => {
     next(new Error('Authentication timeout'));
   }, AUTH_TIMEOUT);
