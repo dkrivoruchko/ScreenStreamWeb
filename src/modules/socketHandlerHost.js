@@ -4,6 +4,7 @@ import { isStreamIdValid, createNewStreamId } from './stream.js';
 
 const SERVER_ORIGIN = process.env.SERVER_ORIGIN;
 const ANDROID_APP_PACKAGE = process.env.ANDROID_APP_PACKAGE;
+const SOCKET_TIMEOUT = 15000; // Untill Android app updates
 
 export default function (io, socket) {
 
@@ -251,9 +252,9 @@ export default function (io, socket) {
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
-        clientSocket.timeout(5000).emit('HOST:OFFER', { offer: payload.offer }, (err, response) => {
+        clientSocket.timeout(SOCKET_TIMEOUT).emit('HOST:OFFER', { offer: payload.offer }, (err, response) => {
             if (err) {
-                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE', message: 'Client error for HOST:OFFER => TIMEOUT_OR_NO_RESPONSE' }));
                 callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
                 return;
             }
@@ -309,9 +310,9 @@ export default function (io, socket) {
 
         const candidates = payload.candidates ? payload.candidates : [payload.candidate];
 
-        clientSocket.timeout(5000).emit('HOST:CANDIDATE', { candidates }, (err, response) => {
+        clientSocket.timeout(SOCKET_TIMEOUT).emit('HOST:CANDIDATE', { candidates }, (err, response) => {
             if (err) {
-                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE', message: 'Client error for HOST:CANDIDATE => TIMEOUT_OR_NO_RESPONSE' }));
                 callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
                 return;
             }
@@ -358,9 +359,9 @@ export default function (io, socket) {
             if (clientSocket.connected) {
                 clientSocket.rooms.forEach(room => { if (room != clientSocket.id) clientSocket.leave(room); });
 
-                clientSocket.timeout(5000).emit('REMOVE:CLIENT', (err, response) => {
+                clientSocket.timeout(SOCKET_TIMEOUT).emit('REMOVE:CLIENT', (err, response) => {
                     if (err) {
-                        logger.warn(JSON.stringify({ socket_event: '[REMOVE:CLIENT]', socket: clientSocket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                        logger.info(JSON.stringify({ socket_event: event, socket: clientSocket.id, error: 'TIMEOUT_OR_NO_RESPONSE', message: 'Client error for REMOVE:CLIENT => TIMEOUT_OR_NO_RESPONSE' }));
                         return;
                     }
                     logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: clientSocket.data.clientId, client_socket: clientSocket.id, message: `REMOVE:CLIENT Client response: ${response.status}` }));

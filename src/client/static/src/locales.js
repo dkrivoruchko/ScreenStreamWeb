@@ -36,7 +36,13 @@ export class Locales {
     }
 
     getTranslationByKey(key) {
-        return this.translations[key] || this.defaultTranslations[key];
+        if (this.translations[key]) {
+            return this.translations[key];
+        }
+        if (this.defaultTranslations[key]) {
+            return this.defaultTranslations[key];
+        }
+        return `[${key}]`;
     }
 
     translateDocument() {
@@ -82,4 +88,4 @@ export class Locales {
 
         return this.defaultLocale;
     }
-}
+} 

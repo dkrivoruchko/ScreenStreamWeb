@@ -13,7 +13,7 @@ function getDefaultIceServers() {
     return DEFAULT_ICE_SERVERS
         .sort(() => 0.5 - Math.random())
         .slice(0, 2)
-        .map(server => ({ urls: server }));
+        .map((server) => ({ urls: server }));
 }
 
 function log(level, message, context = {}) {
@@ -38,6 +38,8 @@ export class WebRTC {
         this.hostOfferTimeout = null;
         this.iceServers = getDefaultIceServers();
 
+        this._isConnecting = false;
+
         log('debug', 'WebRTC.constructor');
     }
 
@@ -53,6 +55,12 @@ export class WebRTC {
 
     async waitForServerOnlineAndConnect() {
         log('debug', 'WebRTC.waitForServerOnlineAndConnect');
+        if (this._isConnecting) {
+            log('warn', 'WebRTC.waitForServerOnlineAndConnect: Already connecting...');
+            return;
+        }
+        this._isConnecting = true;
+
         const online = await this.isServerOnlineAsync();
         this.streamState.isServerAvailable = online;
 
@@ -62,8 +70,11 @@ export class WebRTC {
                 this.connectSocket(token);
             } catch (error) {
                 this.streamState.error = error;
+            } finally {
+                this._isConnecting = false;
             }
         } else {
+            this._isConnecting = false;
             setTimeout(() => this.waitForServerOnlineAndConnect(), 3000);
         }
     }
@@ -123,7 +134,7 @@ export class WebRTC {
             //ERROR:TOKEN_VERIFICATION_FAILED:TURNSTYLE_INVALID_TOKEN:${outcome['error-codes']}
             //ERROR:TOKEN_VERIFICATION_FAILED:TURNSTYLE_INVALID_HOSTNAME:${outcome.hostname}
             //ERROR:TOKEN_VERIFICATION_FAILED:TURNSTYLE_INVALID_CLIENT_ID:${outcome.cdata}
-            this.streamState.error = error.message || 'WEBRTC_ERROR:CONNECT_ERROR'; // || 'WEBRTC_ERROR:CONNECT_ERROR'
+            this.streamState.error = error.message || 'WEBRTC_ERROR:CONNECT_ERROR';
         });
 
         this.socket.on('SOCKET:ERROR', (error, callback) => {
@@ -136,7 +147,7 @@ export class WebRTC {
             // SOCKET_CHECK_ERROR:ERROR_LIMIT_REACHED
             this.streamState.error = error.status;
 
-            // Server always disconnects socket on this event. To disable reconnect
+            // Server always disconnects socket on this event. 
             this.socketReconnectCounter = 5;
 
             if (callback) callback({ status: 'OK' });
@@ -263,9 +274,9 @@ export class WebRTC {
             log('debug', `WebRTC.startStream: PeerConnection: iceConnectionState change to "${state}".`);
             if (state === 'connected' || state === 'completed') {
                 const stats = await this.peerConnection.getStats();
-                const hasTurnServer = this.iceServers.some(server => server.urls.startsWith('turn:'));
+                const hasTurnServer = this.iceServers.some((server) => server.urls.startsWith('turn:'));
 
-                stats.forEach(report => {
+                stats.forEach((report) => {
                     if (report.type === 'candidate-pair' && report.state === 'succeeded') {
                         const localCandidate = stats.get(report.localCandidateId);
                         const remoteCandidate = stats.get(report.remoteCandidateId);
@@ -344,7 +355,7 @@ export class WebRTC {
             log('debug', 'WebRTC.startStream: receive [HOST:CANDIDATE]', { socket_event: '[HOST:CANDIDATE]' });
 
             hostCandidates.candidates.forEach((candidate) => {
-                this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(error => {
+                this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch((error) => {
                     log('warn', 'WebRTC.startStream: Failed to add host candidate', { socket_event: '[HOST:CANDIDATE]', error });
                 });
             });
