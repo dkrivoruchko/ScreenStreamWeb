@@ -14,22 +14,22 @@ const PORT = process.env.PORT || 5000;
 
 const isPROD = SERVER_ORIGIN === 'screenstream.io';
 
-const index = readFileSync('src/client/index.html').toString()
-  .replace('$DD_SERVICE$', `WebClient${isPROD ? "-PROD" : "-DEV"}`)
+const index = readFileSync('src/client/index.html')
+  .toString()
+  .replace('$DD_SERVICE$', `WebClient${isPROD ? '-PROD' : '-DEV'}`)
   .replace('$DD_HANDLER$', isPROD ? '["http"]' : '["http", "console"]')
   .replace('$PACKAGE_VERSION$', `'${process.env.npm_package_version}'`)
   .replace('$TURNSTYLE_SITE_KEY$', process.env.TURNSTYLE_SITE_KEY);
 
-
 const nocache = (_, res, next) => {
-  res.setHeader("Surrogate-Control", "no-store");
-  res.setHeader("Cache-Control", "no-cache, max-age=0, must-revalidate");
+  res.setHeader('Surrogate-Control', 'no-store');
+  res.setHeader('Cache-Control', 'no-cache, max-age=0, must-revalidate');
   next();
 };
 
 const revalidate = (_, res, next) => {
-  res.setHeader("Surrogate-Control", "no-store");
-  res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+  res.setHeader('Surrogate-Control', 'no-store');
+  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
   next();
 };
 
@@ -41,14 +41,20 @@ const expressApp = express()
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    res.setHeader('Content-Security-Policy', [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://cdn.socket.io https://www.datadoghq-browser-agent.com https://challenges.cloudflare.com https://static.cloudflareinsights.com",
-      "style-src 'self' 'unsafe-inline'",
-      "connect-src 'self' wss: https://browser-intake-datadoghq.com https://logs.browser-intake-datadoghq.com",
-      "frame-src 'self' https://challenges.cloudflare.com",
-      "block-all-mixed-content"
-    ].join('; '));
+    res.setHeader(
+      'Content-Security-Policy',
+      [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' https://cdn.socket.io https://www.datadoghq-browser-agent.com https://challenges.cloudflare.com https://static.cloudflareinsights.com",
+        "style-src 'self' 'unsafe-inline'",
+        "connect-src 'self' wss: https://browser-intake-datadoghq.com https://logs.browser-intake-datadoghq.com",
+        "frame-src 'self' https://challenges.cloudflare.com",
+        "base-uri 'self'",
+        "object-src 'none'",
+        "block-all-mixed-content",
+        "upgrade-insecure-requests"
+      ].join('; ')
+    );
     next();
   })
   .use((req, res, next) => {
@@ -56,7 +62,7 @@ const expressApp = express()
       'https://www.datadoghq-browser-agent.com',
       'https://logs.browser-intake-datadoghq.com',
       'https://cdn.socket.io',
-      'https://challenges.cloudflare.com'
+      'https://challenges.cloudflare.com',
     ];
     const origin = req.headers.origin;
     if (allowedOrigins.includes(origin)) {
@@ -67,9 +73,17 @@ const expressApp = express()
     next();
   })
   .use(express.static('src/client/static', { index: false }))
-  .get('/app/ping', nocache, (req, res) => { res.sendStatus(204) })
+  .get('/app/ping', nocache, (req, res) => {
+    res.sendStatus(204);
+  })
   .get('/app/nonce', nocache, nonceHandler)
-  .get('/', revalidate, (req, res) => { if (req.hostname !== SERVER_ORIGIN) res.redirect(301, `https://${SERVER_ORIGIN}`); else res.send(index); })
+  .get('/', revalidate, (req, res) => {
+    if (req.hostname !== SERVER_ORIGIN) {
+      res.redirect(301, `https://${SERVER_ORIGIN}`);
+    } else {
+      res.send(index);
+    }
+  })
   .get('/*', (req, res) => res.sendStatus(404));
 
 const expressServer = expressApp.listen(PORT, () => {
@@ -78,9 +92,9 @@ const expressServer = expressApp.listen(PORT, () => {
 });
 
 const io = new Server(expressServer, {
-  path: "/app/socket",
+  path: '/app/socket',
   transports: ['websocket'],
-  cleanupEmptyChildNamespaces: true
+  cleanupEmptyChildNamespaces: true,
 });
 
 process.on('SIGTERM', () => {
@@ -97,15 +111,17 @@ process.on('SIGTERM', () => {
   });
 });
 
-io.engine.on('connection_error', (err) => { logger.error(JSON.stringify({ socket_event: "[connection_error]", message: err.message })); });
+io.engine.on('connection_error', (err) => {
+  logger.error(JSON.stringify({ socket_event: '[connection_error]', message: err.message }));
+});
 
 io.use(socketAuth);
 
 io.on('connection', (socket) => {
-  logger.debug(JSON.stringify({ socket_event: "[connection]", socket: socket.id, message: `New connection: isHost=${socket.data.isHost}, isClient=${socket.data.isClient}` }));
+  logger.debug(JSON.stringify({ socket_event: '[connection]', socket: socket.id, message: `New connection: isHost=${socket.data.isHost}, isClient=${socket.data.isClient}` }));
 
   socket.on('disconnect', async (reason, description) => {
-    logger.debug(JSON.stringify({ socket_event: "[disconnect]", socket: socket.id, message: reason + "/" + description }));
+    logger.debug(JSON.stringify({ socket_event: '[disconnect]', socket: socket.id, message: reason + '/' + description }));
     socket.removeAllListeners();
     socket.data = undefined;
   });

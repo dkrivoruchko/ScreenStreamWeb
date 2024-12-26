@@ -2,6 +2,8 @@ import logger from '../logger.js';
 import { getIceServers } from './iceServers.js';
 import { isStreamIdValid, getStreamId, getHostSocket } from './stream.js';
 
+const SOCKET_TIMEOUT = 5000;
+
 export default function (io, socket) {
 
     // [STREAM:JOIN] ========================================================================================================
@@ -79,9 +81,9 @@ export default function (io, socket) {
 
         const iceServers = getIceServers(socket.data.clientId);
 
-        hostSocket.timeout(5000).emit('STREAM:JOIN', { clientId: socket.data.clientId, passwordHash: payload.passwordHash, iceServers }, (err, response) => {
+        hostSocket.timeout(SOCKET_TIMEOUT).emit('STREAM:JOIN', { clientId: socket.data.clientId, passwordHash: payload.passwordHash, iceServers }, (err, response) => {
             if (err) {
-                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE', message: 'Host error for STREAM:JOIN => TIMEOUT_OR_NO_RESPONSE' }));
                 callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
                 return;
             }
@@ -155,9 +157,9 @@ export default function (io, socket) {
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: socket.data.clientId, host_socket: hostSocket.id, message: 'Relaying to host' }));
 
-        hostSocket.timeout(5000).emit('CLIENT:ANSWER', { clientId: socket.data.clientId, answer: payload.answer }, (err, response) => {
+        hostSocket.timeout(SOCKET_TIMEOUT).emit('CLIENT:ANSWER', { clientId: socket.data.clientId, answer: payload.answer }, (err, response) => {
             if (err) {
-                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE', message: 'Host error for CLIENT:ANSWER => TIMEOUT_OR_NO_RESPONSE' }));
                 callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
                 return;
             }
@@ -226,9 +228,9 @@ export default function (io, socket) {
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: socket.data.clientId, host_socket: hostSocket.id, message: 'Relaying to host' }));
 
-        hostSocket.timeout(5000).emit('CLIENT:CANDIDATE', { clientId: socket.data.clientId, candidate: payload.candidate }, (err, response) => {
+        hostSocket.timeout(SOCKET_TIMEOUT).emit('CLIENT:CANDIDATE', { clientId: socket.data.clientId, candidate: payload.candidate }, (err, response) => {
             if (err) {
-                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE', message: 'Host error for CLIENT:CANDIDATE => TIMEOUT_OR_NO_RESPONSE' }));
                 callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
                 return;
             }
@@ -298,9 +300,9 @@ export default function (io, socket) {
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socketId, streamId, clientId, host_socket: hostSocket.id, message: 'Relaying to host' }));
 
-        hostSocket.timeout(5000).emit('STREAM:LEAVE', { clientId }, (err, response) => {
+        hostSocket.timeout(SOCKET_TIMEOUT).emit('STREAM:LEAVE', { clientId }, (err, response) => {
             if (err) {
-                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE' }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE', message: 'Host error for STREAM:LEAVE => TIMEOUT_OR_NO_RESPONSE' }));
                 callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
                 return;
             }
