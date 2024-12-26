@@ -22,14 +22,14 @@ const index = readFileSync('src/client/index.html')
   .replace('$TURNSTYLE_SITE_KEY$', process.env.TURNSTYLE_SITE_KEY);
 
 const nocache = (_, res, next) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Surrogate-Control', 'no-store');
-  res.setHeader('Cache-Control', 'no-cache, max-age=0, must-revalidate');
   next();
 };
 
 const revalidate = (_, res, next) => {
-  res.setHeader('Surrogate-Control', 'no-store');
   res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  res.setHeader('Surrogate-Control', 'no-store');
   next();
 };
 
@@ -72,17 +72,20 @@ const expressApp = express()
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     next();
   })
-  .use(express.static('src/client/static', { index: false }))
-  .get('/app/ping', nocache, (req, res) => {
-    res.sendStatus(204);
-  })
+  .use(express.static('src/client/static', {
+    index: false,
+    setHeaders: (res, path) => {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      res.setHeader('Surrogate-Control', 'no-store');
+    }
+  }))
+  .get('/app/ping', nocache, (req, res) => res.sendStatus(204))
   .get('/app/nonce', nocache, nonceHandler)
   .get('/', revalidate, (req, res) => {
     if (req.hostname !== SERVER_ORIGIN) {
-      res.redirect(301, `https://${SERVER_ORIGIN}`);
-    } else {
-      res.send(index);
+      return res.redirect(301, `https://${SERVER_ORIGIN}`);
     }
+    res.send(index);
   })
   .get('/*', (req, res) => res.sendStatus(404));
 
