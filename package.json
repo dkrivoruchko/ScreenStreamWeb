@@ -1,6 +1,6 @@
 {
   "name": "screenstream.io",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "Server and Web Client for ScreenStream Android App",
   "homepage": "https://screenstream.io",
   "license": "MIT",
