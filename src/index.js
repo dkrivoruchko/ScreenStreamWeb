@@ -76,12 +76,12 @@ const expressApp = express()
   })
   .use(express.static('src/client/static', {
     index: false,
-    setHeaders: (res, path) => {
+    setHeaders: (res) => {
       res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       res.setHeader('Surrogate-Control', 'no-store');
     }
   }))
-  .get('/app/ping', nocache, (req, res) => res.sendStatus(204))
+  .get('/app/ping', nocache, (req, res) => { res.sendStatus(204); })
   .get('/app/nonce', nocache, nonceHandler)
   .get('/', revalidate, (req, res) => {
     if (req.hostname !== SERVER_ORIGIN) {
@@ -89,7 +89,7 @@ const expressApp = express()
     }
     res.send(index);
   })
-  .get('/*', (req, res) => res.sendStatus(404));
+  .use((req, res) => { res.sendStatus(404); });
 
 const expressServer = expressApp.listen(PORT, () => {
   logger.warn(`Listening on ${PORT}`);
@@ -123,10 +123,22 @@ io.engine.on('connection_error', (err) => {
 io.use(socketAuth);
 
 io.on('connection', (socket) => {
-  logger.debug(JSON.stringify({ socket_event: '[connection]', socket: socket.id, message: `New connection: isHost=${socket.data.isHost}, isClient=${socket.data.isClient}` }));
+  logger.debug(
+    JSON.stringify({
+      socket_event: '[connection]',
+      socket: socket.id,
+      message: `New connection: isHost=${socket.data.isHost}, isClient=${socket.data.isClient}`
+    })
+  );
 
   socket.on('disconnect', async (reason, description) => {
-    logger.debug(JSON.stringify({ socket_event: '[disconnect]', socket: socket.id, message: reason + '/' + description }));
+    logger.debug(
+      JSON.stringify({
+        socket_event: '[disconnect]',
+        socket: socket.id,
+        message: reason + '/' + description
+      })
+    );
     socket.removeAllListeners();
     socket.data = undefined;
   });
