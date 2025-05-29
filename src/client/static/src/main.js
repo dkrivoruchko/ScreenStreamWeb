@@ -42,6 +42,7 @@ window.streamState = new Proxy({
     streamId: null,
     isStreamJoined: false,
     isStreamRunning: false,
+    isReconnectMode: false,
     error: null,
 }, {
     set(target, key, value) {

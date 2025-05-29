@@ -39,6 +39,7 @@ export class WebRTC {
         this.iceServers = getDefaultIceServers();
 
         this._isConnecting = false;
+        this._timeoutId = null;
 
         log('debug', 'WebRTC.constructor');
     }
@@ -205,12 +206,24 @@ export class WebRTC {
                 this.streamState.isJoiningStream = false;
                 if (error) {
                     log('debug', `WebRTC.joinStream: [STREAM:JOIN] timeout: ${error}`);
-                    this.streamState.error = 'ERROR:TIMEOUT:STREAM:JOIN';
+                    if (this.streamState.isReconnectMode) {
+                        const timeout = Math.floor(2000 * (1.1 ** (attempt)));
+                        log('debug', `WebRTC.joinStream: ${streamId}. Attempt: ${attempt} failed. Attempting to reconnect with ${timeout}ms timeout...`, { streamId });
+                        this._timeoutId = setTimeout(() => this.joinStream(streamId, password, attempt + 1), timeout);
+                    } else {
+                        this.streamState.error = 'ERROR:TIMEOUT:STREAM:JOIN';
+                    }
                     return;
                 }
                 if (!response || response.status !== 'OK') {
                     log('warn', `WebRTC.joinStream: [STREAM:JOIN] error: ${JSON.stringify(response)}`, { socket_event: '[STREAM:JOIN]', error: response });
-                    this.streamState.error = response.status;
+                    if (this.streamState.isReconnectMode) {
+                        const timeout = Math.floor(2000 * (1.1 ** (attempt)));
+                        log('debug', `WebRTC.joinStream: ${streamId}. Attempt: ${attempt} failed. Attempting to reconnect with ${timeout}ms timeout...`, { streamId });
+                        this._timeoutId = setTimeout(() => this.joinStream(streamId, password, attempt + 1), timeout);
+                    } else {
+                        this.streamState.error = response.status;
+                    }
                     return;
                 }
 
@@ -218,6 +231,7 @@ export class WebRTC {
                 this.streamState.streamId = streamId;
                 this.streamPassword = password;
                 this.streamState.isStreamJoined = true;
+                this.streamState.isReconnectMode = false;
                 this.iceServers = response.iceServers?.length ? response.iceServers : getDefaultIceServers();
 
                 this.setupSocketEventListeners(attempt);
@@ -307,14 +321,15 @@ export class WebRTC {
             log('debug', `WebRTC.startStream: PeerConnection: connectionState change to "${state}".`);
 
             if (state === 'disconnected' || state === 'failed') {
-                if (attempt === 0 && this.streamState.isSocketConnected && this.streamState.isServerAvailable) {
+                if (this.streamState.isSocketConnected && this.streamState.isServerAvailable && !this.streamState.isReconnectMode) {
                     log('info', 'WebRTC.startStream: PeerConnection: Attempting to reconnect...');
                     const streamId = this.streamState.streamId;
                     const password = this.streamPassword;
-                    this.leaveStream(true);
-                    setTimeout(() => this.joinStream(streamId, password, attempt + 1), 1000);
-                } else {
-                    log('info', 'WebRTC.startStream: PeerConnection: Reconnection failed. Stopping stream.');
+                    this.streamState.isStreamRunning = false;
+                    this.streamState.isReconnectMode = true;
+                    this._timeoutId = setTimeout(() => this.joinStream(streamId, password, attempt + 1), 1000);
+                } else if (!this.streamState.isSocketConnected || !this.streamState.isServerAvailable) {
+                    log('info', 'WebRTC.startStream: PeerConnection failed. Stopping stream.');
                     this.leaveStream(true);
                 }
             }
@@ -414,6 +429,9 @@ export class WebRTC {
         }
 
         this.streamState.isStreamRunning = false;
+        this.streamState.isReconnectMode = false;
+        clearTimeout(this._timeoutId );
+        this._timeoutId = null;
     }
 
     leaveStream(notifyServer = true, forcedByServer = false) {
