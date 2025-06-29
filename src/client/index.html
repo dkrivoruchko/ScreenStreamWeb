@@ -152,11 +152,6 @@
   </div>
 
   <script src="/bg.js"></script>
-  <script>
-    const renderer = new ModRenderer("#canvas-container");
-    ModManager.load("polygon").then((it) => { renderer.initMod(it).then(() => { renderer.mod._renderer.setSize(window.innerWidth, window.innerHeight) }) });
-    window.addEventListener("resize", () => { renderer.mod._renderer.setSize(window.innerWidth, window.innerHeight) });
-  </script>
   <script src="/bundle.js" type="module"></script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" crossorigin="anonymous" defer></script>
 </body>

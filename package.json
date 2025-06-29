@@ -1,6 +1,6 @@
 {
   "name": "screenstream.io",
-  "version": "1.1.10",
+  "version": "1.1.11",
   "description": "Server and Web Client for ScreenStream Android App",
   "homepage": "https://screenstream.io",
   "license": "MIT",
@@ -16,13 +16,13 @@
     "start": "node src/index.js"
   },
   "engines": {
-    "npm": "11.3.x",
+    "npm": "11.4.x",
     "node": "24.x"
   },
   "dependencies": {
     "datadog-winston": "^1.6.0",
     "express": "^5.1.0",
-    "gtoken": "^7.1.0",
+    "gtoken": "^8.0.0",
     "jose": "^6.0.0",
     "socket.io": "^4.8.0",
     "winston": "^3.17.0"
