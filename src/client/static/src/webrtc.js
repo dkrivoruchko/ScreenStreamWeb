@@ -207,7 +207,7 @@ export class WebRTC {
                 if (error) {
                     log('debug', `WebRTC.joinStream: [STREAM:JOIN] timeout: ${error}`);
                     if (this.streamState.isReconnectMode) {
-                        const timeout = Math.floor(2000 * (1.1 ** (attempt)));
+                        const timeout = Math.min(Math.floor(2000 * (1.1 ** (attempt))), 15_000);
                         log('debug', `WebRTC.joinStream: ${streamId}. Attempt: ${attempt} failed. Attempting to reconnect with ${timeout}ms timeout...`, { streamId });
                         this._timeoutId = setTimeout(() => this.joinStream(streamId, password, attempt + 1), timeout);
                     } else {
@@ -218,7 +218,7 @@ export class WebRTC {
                 if (!response || response.status !== 'OK') {
                     log('warn', `WebRTC.joinStream: [STREAM:JOIN] error: ${JSON.stringify(response)}`, { socket_event: '[STREAM:JOIN]', error: response });
                     if (this.streamState.isReconnectMode) {
-                        const timeout = Math.floor(2000 * (1.1 ** (attempt)));
+                        const timeout = Math.min(Math.floor(2000 * (1.1 ** (attempt))), 15_000);
                         log('debug', `WebRTC.joinStream: ${streamId}. Attempt: ${attempt} failed. Attempting to reconnect with ${timeout}ms timeout...`, { streamId });
                         this._timeoutId = setTimeout(() => this.joinStream(streamId, password, attempt + 1), timeout);
                     } else {
@@ -430,7 +430,7 @@ export class WebRTC {
 
         this.streamState.isStreamRunning = false;
         this.streamState.isReconnectMode = false;
-        clearTimeout(this._timeoutId );
+        clearTimeout(this._timeoutId);
         this._timeoutId = null;
     }
 
