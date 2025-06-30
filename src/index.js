@@ -132,13 +132,7 @@ io.on('connection', (socket) => {
   );
 
   socket.on('disconnect', async (reason, description) => {
-    logger.debug(
-      JSON.stringify({
-        socket_event: '[disconnect]',
-        socket: socket.id,
-        message: reason + '/' + description
-      })
-    );
+    logger.debug(JSON.stringify({ socket_event: '[disconnect]', socket_id: socket.id, reason: reason, message: 'Socket disconnected.' }));
     socket.removeAllListeners();
     socket.data = undefined;
   });
