@@ -79,8 +79,6 @@ export default function (io, socket) {
         socket.removeAllListeners('STREAM:LEAVE');
         socket.on('STREAM:LEAVE', streamLeave);
 
-        logger.debug(JSON.stringify({ socket_event: '[listeners:add]', socket_id: socket.id, streamId: payload.streamId, listeners: ['CLIENT:ANSWER', 'CLIENT:CANDIDATE', 'STREAM:LEAVE'] }));
-
         const iceServers = getIceServers(socket.data.clientId);
 
         hostSocket.timeout(SOCKET_TIMEOUT).emit('STREAM:JOIN', { clientId: socket.data.clientId, passwordHash: payload.passwordHash, iceServers }, (err, response) => {
@@ -268,8 +266,6 @@ export default function (io, socket) {
         socket.removeAllListeners('CLIENT:ANSWER');
         socket.removeAllListeners('CLIENT:CANDIDATE');
         socket.removeAllListeners('STREAM:LEAVE');
-
-        logger.debug(JSON.stringify({ socket_event: '[listeners:remove]', socket_id: socket.id, streamId: getStreamId(socket), listeners: ['CLIENT:ANSWER', 'CLIENT:CANDIDATE', 'STREAM:LEAVE'] }));
 
         const socketId = socket.id;
         const clientId = socket.data.clientId;

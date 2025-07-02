@@ -109,8 +109,6 @@ export default function (io, socket) {
             socket.removeAllListeners('REMOVE:CLIENT');
             socket.on('REMOVE:CLIENT', removeClient);
 
-            logger.debug(JSON.stringify({ socket_event: '[listeners:add]', socket_id: socket.id, streamId, listeners: ['STREAM:REMOVE', 'STREAM:START', 'STREAM:STOP', 'HOST:OFFER', 'HOST:CANDIDATE', 'REMOVE:CLIENT'] }));
-
             socket.data.streamId = streamId;
             socket.data.pubKey = pubKey;
             socket.join(streamId);
@@ -149,10 +147,8 @@ export default function (io, socket) {
         socket.removeAllListeners('STREAM:START');
         socket.removeAllListeners('STREAM:STOP');
         socket.removeAllListeners('HOST:OFFER');
-        socket.removeAllListeners('HOST:CANDIDATES');
+        socket.removeAllListeners('HOST:CANDIDATE');
         socket.removeAllListeners('REMOVE:CLIENT');
-
-        logger.debug(JSON.stringify({ socket_event: '[listeners:remove]', socket_id: socket.id, streamId: socket.data.streamId, listeners: ['STREAM:REMOVE', 'STREAM:START', 'STREAM:STOP', 'HOST:OFFER', 'HOST:CANDIDATES', 'REMOVE:CLIENT'] }));
 
         callback({ status: 'OK' });
     }
