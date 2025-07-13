@@ -1,6 +1,6 @@
 {
   "name": "screenstream.io",
-  "version": "1.1.12",
+  "version": "1.1.13",
   "description": "Server and Web Client for ScreenStream Android App",
   "homepage": "https://screenstream.io",
   "license": "MIT",
@@ -32,9 +32,9 @@
     "utf-8-validate": "^5.0.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.27.0",
-    "@babel/core": "^7.27.0",
-    "@babel/preset-env": "^7.27.0",
+    "@babel/cli": "^7.28.0",
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
     "babel-loader": "^10.0.0",
     "webpack": "^5.99.0",
     "webpack-cli": "^6.0.0"

@@ -126,7 +126,7 @@ export default function (io, socket) {
 
     // [STREAM:REMOVE] ========================================================================================================
 
-    const removeStream = (callback) => {
+    const removeStream = async (callback) => {
         const event = '[STREAM:REMOVE]';
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, message: 'New stream remove request' }));
@@ -139,8 +139,15 @@ export default function (io, socket) {
 
         logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, message: `Removing stream Id: ${socket.data.streamId}` }));
 
-        socket.to(socket.data.streamId).emit('REMOVE:STREAM'); //This is client only event, don't mix it with 'STREAM:REMOVE' from host
-        io.socketsLeave(socket.data.streamId);
+        const clientSockets = await io.in(socket.data.streamId).fetchSockets();
+        clientSockets.forEach(clientSocket => {
+            if (clientSocket.id === socket.id) return;
+            clientSocket.emit('REMOVE:STREAM'); //This is client only event, don't mix it with 'STREAM:REMOVE' from host
+            clientSocket.leave(socket.data.streamId);
+            clientSocket.removeAllListeners('CLIENT:ANSWER');
+            clientSocket.removeAllListeners('CLIENT:CANDIDATE');
+            clientSocket.removeAllListeners('STREAM:LEAVE');
+        });
 
         socket.data.streamId = undefined;
         socket.data.pubKey = undefined;
