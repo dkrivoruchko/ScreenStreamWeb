@@ -5,7 +5,7 @@ import { createHmac } from 'crypto';
 
 const SERVER_ORIGIN = process.env.SERVER_ORIGIN;
 
-const TURN2_SHARED_SECRET = process.env.TURN2_SHARED_SECRET;
+const TURN_SHARED_SECRET = process.env.TURN_SHARED_SECRET;
 const GOOGLE_STUN_SERVERS_ADDRESS = [
     'stun.l.google.com',
     'stun1.l.google.com',
@@ -115,12 +115,12 @@ function getStunServer() {
 
 function getTurnServer(username) {
     const turnUsername = `${Math.floor(Date.now() / 1000) + TURN_CREDENTIAL_VALID_DURATION}:${username}`;
-    const hmac = createHmac('sha1', TURN2_SHARED_SECRET);
+    const hmac = createHmac('sha1', TURN_SHARED_SECRET);
     hmac.update(turnUsername);
     const turnPassword = hmac.digest().toString('base64');
 
     return {
-        urls: `turn:turn2.${SERVER_ORIGIN}:3478?transport=udp`,
+        urls: `turn:turn.${SERVER_ORIGIN}:3478?transport=udp`,
         username: turnUsername,
         credential: turnPassword
     };
