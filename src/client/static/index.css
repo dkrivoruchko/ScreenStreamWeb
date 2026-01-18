@@ -13,6 +13,13 @@ body {
     background-color: #132b42
 }
 
+#canvas-container {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
 #canvas-container canvas {
     position: absolute;
     top: 0;
@@ -20,7 +27,7 @@ body {
     right: 0;
     bottom: 0;
     margin: auto;
-    z-index: -9999
+    z-index: 0
 }
 
 #start-container {
