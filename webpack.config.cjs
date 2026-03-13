@@ -1,4 +1,5 @@
 const path = require('path');
+const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
     entry: './src/client/static/src/main.js',
@@ -13,6 +14,13 @@ module.exports = {
                 exclude: /node_modules/,
                 use: ['babel-loader'],
             },
+        ],
+    },
+    optimization: {
+        minimizer: [
+            new TerserPlugin({
+                extractComments: false,
+            }),
         ],
     },
     mode: 'production'

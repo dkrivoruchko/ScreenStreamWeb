@@ -29,57 +29,53 @@ const INACTIVE_STUN_SERVERS = new Set();
 const TURN_CREDENTIAL_VALID_DURATION = 6 * 60 * 60; // 6 hours
 
 function verifyStunServer(address, port = GOOGLE_STUN_SERVERS_PORT) {
-    const client = dgram.createSocket('udp4');
-    let socketClosed = false;
+    return new Promise((resolve) => {
+        const client = dgram.createSocket('udp4');
+        let socketClosed = false;
 
-    client.on('message', () => {
-        if (!socketClosed) {
-            ACTIVE_STUN_SERVERS.add(address);
-            INACTIVE_STUN_SERVERS.delete(address);
+        const finish = (isActive, logMessage = null) => {
+            if (socketClosed) return;
+
+            if (isActive) {
+                ACTIVE_STUN_SERVERS.add(address);
+                INACTIVE_STUN_SERVERS.delete(address);
+            } else {
+                ACTIVE_STUN_SERVERS.delete(address);
+                INACTIVE_STUN_SERVERS.add(address);
+            }
+
+            if (logMessage) logger.warn(logMessage);
+
             socketClosed = true;
             client.close();
-        }
-    });
+            resolve(isActive);
+        };
 
-    client.on('error', (err) => {
-        if (!socketClosed) {
-            logger.warn(`Failed to reach STUN server ${address}:`, err);
-            ACTIVE_STUN_SERVERS.delete(address);
-            INACTIVE_STUN_SERVERS.add(address);
-            socketClosed = true;
-            client.close();
-        }
-    });
+        client.on('message', () => {
+            finish(true);
+        });
 
-    client.send(STUN_SERVERS_CHECK_REQUEST_BUFFER, port, address, (err) => {
-        if (err && !socketClosed) {
-            logger.warn(`Error sending STUN request to ${address}:`, err.message);
-            ACTIVE_STUN_SERVERS.delete(address);
-            INACTIVE_STUN_SERVERS.add(address);
-            socketClosed = true;
-            client.close();
-        }
-    });
+        client.on('error', (err) => {
+            finish(false, `Failed to reach STUN server ${address}: ${err.message}`);
+        });
 
-    setTimeout(() => {
-        if (!socketClosed) {
-            logger.debug(`No STUN response from ${address} (assuming down).`);
-            ACTIVE_STUN_SERVERS.delete(address);
-            INACTIVE_STUN_SERVERS.add(address);
-            client.close();
-        }
-    }, 5000);
+        client.send(STUN_SERVERS_CHECK_REQUEST_BUFFER, port, address, (err) => {
+            if (err) {
+                finish(false, `Error sending STUN request to ${address}: ${err.message}`);
+            }
+        });
+
+        setTimeout(() => {
+            if (!socketClosed) {
+                logger.debug(`No STUN response from ${address} (assuming down).`);
+                finish(false);
+            }
+        }, 5000);
+    });
 }
 
 function updateActiveServers() {
-    const checks = [...GOOGLE_STUN_SERVERS_ADDRESS].map((address) =>
-        new Promise((resolve) => {
-            verifyStunServer(address);
-            resolve();
-        })
-    );
-
-    Promise.allSettled(checks).then(() => {
+    Promise.allSettled(GOOGLE_STUN_SERVERS_ADDRESS.map((address) => verifyStunServer(address))).finally(() => {
         setTimeout(updateActiveServers, STUN_SERVERS_CHECK_TIMEOUT);
     });
 }
@@ -87,11 +83,12 @@ function updateActiveServers() {
 function recheckInactiveServers() {
     if (INACTIVE_STUN_SERVERS.size > 0) {
         logger.debug(`Re-checking ${INACTIVE_STUN_SERVERS.size} inactive STUN server(s)...`);
-
-        for (const address of INACTIVE_STUN_SERVERS) {
-            verifyStunServer(address);
-        }
+        Promise.allSettled(Array.from(INACTIVE_STUN_SERVERS, (address) => verifyStunServer(address))).finally(() => {
+            setTimeout(recheckInactiveServers, RECHECK_INACTIVE_DELAY);
+        });
+        return;
     }
+
     setTimeout(recheckInactiveServers, RECHECK_INACTIVE_DELAY);
 }
 
@@ -99,7 +96,7 @@ updateActiveServers();
 recheckInactiveServers();
 
 export function getIceServers(username) {
-    return [getStunServer(), getTurnServer(username)];
+    return [getStunServer(), ...getTurnServers(username)];
 }
 
 function getStunServer() {
@@ -113,15 +110,22 @@ function getStunServer() {
     return { urls: `stun:${chosen}:${GOOGLE_STUN_SERVERS_PORT}` };
 }
 
-function getTurnServer(username) {
+function getTurnServers(username) {
     const turnUsername = `${Math.floor(Date.now() / 1000) + TURN_CREDENTIAL_VALID_DURATION}:${username}`;
     const hmac = createHmac('sha1', TURN_SHARED_SECRET);
     hmac.update(turnUsername);
     const turnPassword = hmac.digest().toString('base64');
 
-    return {
-        urls: `turn:turn.${SERVER_ORIGIN}:3478?transport=udp`,
-        username: turnUsername,
-        credential: turnPassword
-    };
+    return [
+        {
+            urls: `turn:turn.${SERVER_ORIGIN}:3478?transport=udp`,
+            username: turnUsername,
+            credential: turnPassword
+        },
+        {
+            urls: `turn:turn.${SERVER_ORIGIN}:3478?transport=tcp`,
+            username: turnUsername,
+            credential: turnPassword
+        }
+    ];
 }

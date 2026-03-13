@@ -8,6 +8,13 @@ const SOCKET_TIMEOUT = 15000; // Untill Android app updates
 
 export default function (io, socket) {
 
+    const getCurrentClientSocket = async (streamId, clientId) => {
+        if (!streamId || !clientId) return null;
+
+        const socketsInStream = await io.in(streamId).fetchSockets();
+        return socketsInStream.find(item => item.data?.clientId === clientId && item.connected) ?? null;
+    };
+
     // [STREAM:CREATE] ========================================================================================================
 
     const createStream = async (payload, callback) => {
@@ -245,7 +252,8 @@ export default function (io, socket) {
             return;
         }
 
-        const socketsInStream = await io.in(socket.data.streamId).fetchSockets();
+        const streamId = socket.data.streamId;
+        const socketsInStream = await io.in(streamId).fetchSockets();
         const clientSocket = socketsInStream.find(item => item.data && item.data.clientId === payload.clientId);
 
         if (!clientSocket) {
@@ -261,9 +269,9 @@ export default function (io, socket) {
             return;
         }
 
-        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
-        clientSocket.timeout(SOCKET_TIMEOUT).emit('HOST:OFFER', { offer: payload.offer }, (err, response) => {
+        clientSocket.timeout(SOCKET_TIMEOUT).emit('HOST:OFFER', { offer: payload.offer }, async (err, response) => {
             if (err) {
                 logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE', message: 'Client error for HOST:OFFER => TIMEOUT_OR_NO_RESPONSE' }));
                 callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
@@ -275,12 +283,24 @@ export default function (io, socket) {
                 return;
             }
 
-            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:OFFER Client response: ${response.status}` }));
+            if (socket.data.streamId !== streamId) {
+                logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'HOST:OFFER Host stream changed. Ignoring stale response' }));
+                return;
+            }
+
+            const currentClientSocket = await getCurrentClientSocket(streamId, payload.clientId);
+            if (!currentClientSocket || currentClientSocket.id !== clientSocket.id) {
+                logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: payload.clientId, client_socket: clientSocket.id, current_client_socket: currentClientSocket?.id, message: 'HOST:OFFER response is from stale client socket' }));
+                callback({ status: 'ERROR:NO_CLIENT_FOUND' });
+                return;
+            }
+
+            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:OFFER Client response: ${response.status}` }));
 
             callback({ status: response.status });
 
             if (response.status !== 'OK') {
-                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: `Client error for HOST:OFFER => ${response.status}` }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: `Client error for HOST:OFFER => ${response.status}` }));
             }
         });
     }
@@ -302,7 +322,8 @@ export default function (io, socket) {
             return;
         }
 
-        const socketsInStream = await io.in(socket.data.streamId).fetchSockets();
+        const streamId = socket.data.streamId;
+        const socketsInStream = await io.in(streamId).fetchSockets();
         const clientSocket = socketsInStream.find(item => item.data && item.data.clientId === payload.clientId);
 
         if (!clientSocket) {
@@ -317,11 +338,11 @@ export default function (io, socket) {
             return;
         }
 
-        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
+        logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'Relaying to client' }));
 
         const candidates = payload.candidates ? payload.candidates : [payload.candidate];
 
-        clientSocket.timeout(SOCKET_TIMEOUT).emit('HOST:CANDIDATE', { candidates }, (err, response) => {
+        clientSocket.timeout(SOCKET_TIMEOUT).emit('HOST:CANDIDATE', { candidates }, async (err, response) => {
             if (err) {
                 logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, error: 'TIMEOUT_OR_NO_RESPONSE', message: 'Client error for HOST:CANDIDATE => TIMEOUT_OR_NO_RESPONSE' }));
                 callback({ status: 'ERROR:TIMEOUT_OR_NO_RESPONSE' });
@@ -333,12 +354,24 @@ export default function (io, socket) {
                 return;
             }
 
-            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:CANDIDATE Client response: ${response.status}` }));
+            if (socket.data.streamId !== streamId) {
+                logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: 'HOST:CANDIDATE Host stream changed. Ignoring stale response' }));
+                return;
+            }
+
+            const currentClientSocket = await getCurrentClientSocket(streamId, payload.clientId);
+            if (!currentClientSocket || currentClientSocket.id !== clientSocket.id) {
+                logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: payload.clientId, client_socket: clientSocket.id, current_client_socket: currentClientSocket?.id, message: 'HOST:CANDIDATE response is from stale client socket' }));
+                callback({ status: 'ERROR:NO_CLIENT_FOUND' });
+                return;
+            }
+
+            logger.debug(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: payload.clientId, client_socket: clientSocket.id, message: `HOST:CANDIDATE Client response: ${response.status}` }));
 
             callback({ status: response.status });
 
             if (response.status !== 'OK') {
-                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId: socket.data.streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: `Client error for HOST:CANDIDATE => ${response.status}` }));
+                logger.warn(JSON.stringify({ socket_event: event, socket: socket.id, streamId, clientId: payload.clientId, client_socket: clientSocket.id, error: response.status, message: `Client error for HOST:CANDIDATE => ${response.status}` }));
             }
         });
     }
