@@ -144,7 +144,7 @@ const onNewState = (key, oldValue, newValue, state) => {
 
     UIElements.joinButtonLoader.style.display = (!state.isServerAvailable || (state.isServerAvailable && state.isTokenAvailable) || state.isJoiningStream) ? 'block' : 'none';
 
-    UIElements.streamJoinButton.style.display = (state.isSocketConnected && !state.isJoiningStream) ? 'table-cell' : 'none';
+    UIElements.streamJoinButton.style.display = (state.isSocketConnected && !state.isJoiningStream) ? 'inline-block' : 'none';
 
     UIElements.streamErrorCell.style.display = (state.error) ? 'block' : 'none';
 

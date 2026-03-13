@@ -40,6 +40,7 @@ export class WebRTC {
 
         this._isConnecting = false;
         this._timeoutId = null;
+        this._negotiationToken = 0;
 
         log('debug', 'WebRTC.constructor');
     }
@@ -273,21 +274,28 @@ export class WebRTC {
         }
 
         const RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
-        this.peerConnection = new RTCPeerConnection({
+        const negotiationToken = ++this._negotiationToken;
+        const peerConnection = new RTCPeerConnection({
             bundlePolicy: 'balanced',
             iceServers: this.iceServers,
         });
+        this.peerConnection = peerConnection;
 
         this.hostOfferTimeout = setTimeout(() => {
+            if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) return;
             log('info', 'WebRTC.startStream: HOST:OFFER timeout. Leaving stream.');
             this.leaveStream(true);
         }, 5000);
 
-        this.peerConnection.oniceconnectionstatechange = async () => {
-            const state = this.peerConnection.iceConnectionState;
+        peerConnection.oniceconnectionstatechange = async () => {
+            if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) return;
+
+            const state = peerConnection.iceConnectionState;
             log('debug', `WebRTC.startStream: PeerConnection: iceConnectionState change to "${state}".`);
             if (state === 'connected' || state === 'completed') {
-                const stats = await this.peerConnection.getStats();
+                const stats = await peerConnection.getStats();
+                if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) return;
+
                 const hasTurnServer = this.iceServers.some((server) => server.urls.startsWith('turn:'));
 
                 stats.forEach((report) => {
@@ -316,8 +324,10 @@ export class WebRTC {
             }
         };
 
-        this.peerConnection.onconnectionstatechange = () => {
-            const state = this.peerConnection.connectionState;
+        peerConnection.onconnectionstatechange = () => {
+            if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) return;
+
+            const state = peerConnection.connectionState;
             log('debug', `WebRTC.startStream: PeerConnection: connectionState change to "${state}".`);
 
             if (state === 'disconnected' || state === 'failed') {
@@ -327,7 +337,10 @@ export class WebRTC {
                     const password = this.streamPassword;
                     this.streamState.isStreamRunning = false;
                     this.streamState.isReconnectMode = true;
-                    this._timeoutId = setTimeout(() => this.joinStream(streamId, password, attempt + 1), 1000);
+                    this._timeoutId = setTimeout(() => {
+                        if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) return;
+                        this.joinStream(streamId, password, attempt + 1);
+                    }, 1000);
                 } else if (!this.streamState.isSocketConnected || !this.streamState.isServerAvailable) {
                     log('info', 'WebRTC.startStream: PeerConnection failed. Stopping stream.');
                     this.leaveStream(true);
@@ -335,14 +348,19 @@ export class WebRTC {
             }
         };
 
-        this.peerConnection.ontrack = (event) => {
+        peerConnection.ontrack = (event) => {
+            if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) return;
             this.onNewTrack(event.track);
             this.streamState.isStreamRunning = true;
         };
 
-        this.peerConnection.onicecandidate = (event) => {
+        peerConnection.onicecandidate = (event) => {
+            if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) return;
+
             if (event.candidate) {
                 this.socket.timeout(5000).emit('CLIENT:CANDIDATE', { candidate: event.candidate.toJSON() }, (error, response) => {
+                    if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) return;
+
                     if (error) {
                         log('debug', `WebRTC.startStream: [CLIENT:CANDIDATE] timeout: ${error}`);
                         this.streamState.error = 'ERROR:TIMEOUT:CLIENT:CANDIDATE';
@@ -354,11 +372,16 @@ export class WebRTC {
                     }
                 });
             } else {
-                this.peerConnection.onicecandidate = null;
+                peerConnection.onicecandidate = null;
             }
         };
 
         this.socket.on('HOST:CANDIDATE', (hostCandidates, callback) => {
+            if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) {
+                if (callback) callback({ status: 'OK' });
+                return;
+            }
+
             if (!hostCandidates || !hostCandidates.candidates) {
                 if (callback) callback({ status: 'ERROR:EMPTY_OR_BAD_DATA' });
                 log('warn', 'WebRTC.startStream: Error in host candidates', { socket_event: '[HOST:CANDIDATE]', error: 'ERROR:EMPTY_OR_BAD_DATA', hostCandidate: hostCandidates.candidates });
@@ -376,7 +399,14 @@ export class WebRTC {
             });
         });
 
-        this.socket.once('HOST:OFFER', async (hostOffer, callback) => {
+        const hostOfferHandler = async (hostOffer, callback) => {
+            if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) {
+                if (callback) callback({ status: 'OK' });
+                return;
+            }
+
+            this.socket.off('HOST:OFFER', hostOfferHandler);
+
             clearTimeout(this.hostOfferTimeout);
             this.hostOfferTimeout = null;
 
@@ -391,11 +421,16 @@ export class WebRTC {
             log('debug', 'WebRTC.startStream: receive [HOST:OFFER]', { socket_event: '[HOST:OFFER]' });
 
             try {
-                await this.peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: hostOffer.offer }));
-                const answer = await this.peerConnection.createAnswer({ voiceActivityDetection: false });
-                await this.peerConnection.setLocalDescription(answer);
+                await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: hostOffer.offer }));
+                if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) return;
+
+                const answer = await peerConnection.createAnswer({ voiceActivityDetection: false });
+                await peerConnection.setLocalDescription(answer);
+                if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) return;
 
                 this.socket.timeout(5000).emit('CLIENT:ANSWER', { answer: answer.sdp }, (error, response) => {
+                    if (negotiationToken !== this._negotiationToken || this.peerConnection !== peerConnection) return;
+
                     if (error) {
                         log('debug', `WebRTC.startStream: [CLIENT:ANSWER] timeout: ${error}`);
                         this.streamState.error = 'ERROR:TIMEOUT:CLIENT:ANSWER';
@@ -410,11 +445,14 @@ export class WebRTC {
                 log('error', 'WebRTC.startStream: Error during offer/answer negotiation', { socket_event: '[CLIENT:ANSWER]', error });
                 this.streamState.error = error;
             }
-        });
+        };
+
+        this.socket.on('HOST:OFFER', hostOfferHandler);
     }
 
     stopStream() {
         log('debug', 'WebRTC.stopStream');
+        this._negotiationToken += 1;
 
         clearTimeout(this.hostOfferTimeout);
         this.hostOfferTimeout = null;
