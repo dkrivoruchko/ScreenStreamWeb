@@ -27,35 +27,73 @@
     window.DD_LOGS && DD_LOGS.setGlobalContextProperty('version', $PACKAGE_VERSION$);
   </script>
 
-  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous" async></script>
+  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" crossorigin="anonymous" async></script>
   <script>
     "use strict";
+
+    window.__turnstileScriptStatus = "loading";
+
+    function isRetryableTurnstileError(errorCode) {
+      if (!errorCode) return false;
+      if (errorCode === "110600" || errorCode === "110620" || errorCode === "200500") return true;
+      return /^300/.test(errorCode) || /^600/.test(errorCode);
+    }
 
     window.getTurnstileTokenAsync = function (clientId) {
       window.DD_LOGS && DD_LOGS.logger.debug("getTurnstileTokenAsync: clientId=".concat(clientId));
       return new Promise(function (resolve, reject) {
-        var turnstileWidgetId = window.turnstile.render("#turnstile-container", {
-          sitekey: "$TURNSTYLE_SITE_KEY$",
-          cData: clientId,
-          callback: function callback(token) {
-            window.DD_LOGS && DD_LOGS.logger.debug("Got turnstile token");
+        if (!window.turnstile || typeof window.turnstile.render !== "function") {
+          reject("ERROR:TURNSTILE:SCRIPT_LOAD_FAILED");
+          return;
+        }
+
+        var isSettled = false;
+        var turnstileWidgetId = null;
+        var timeoutId = setTimeout(function () {
+          settle("ERROR:TURNSTILE:TIMEOUT");
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timeoutId);
+          if (turnstileWidgetId !== null && window.turnstile && typeof window.turnstile.remove === "function") {
             window.turnstile.remove(turnstileWidgetId);
-            resolve(token);
-          },
-          'error-callback': function errorCallback(error_code) {
-            window.DD_LOGS && DD_LOGS.logger.error("Turnstile error: ".concat(error_code), { error: error_code });
-            if (error_code === "200100") {
-              window.streamState.error = "ERROR:TURNSTILE:200100";
-              window.turnstile.remove(turnstileWidgetId);
-              return true;
-            }
-            return false;
-          },
-          'expired-callback': function expiredCallback() {
-            window.DD_LOGS && DD_LOGS.logger.warn("Turnstile expired");
-            return false;
           }
-        });
+        }
+
+        function settle(value, isSuccess) {
+          if (isSettled) return;
+          isSettled = true;
+          cleanup();
+          if (isSuccess) resolve(value);
+          else reject(value);
+        }
+
+        try {
+          turnstileWidgetId = window.turnstile.render("#turnstile-container", {
+            sitekey: "$TURNSTYLE_SITE_KEY$",
+            cData: clientId,
+            retry: "auto",
+            callback: function callback(token) {
+              window.DD_LOGS && DD_LOGS.logger.debug("Got turnstile token");
+              settle(token, true);
+            },
+            'error-callback': function errorCallback(error_code) {
+              window.DD_LOGS && DD_LOGS.logger.error("Turnstile error: ".concat(error_code), { error: error_code });
+              if (isRetryableTurnstileError(error_code)) return;
+              settle("ERROR:TURNSTILE:".concat(error_code || "FAILED"));
+            },
+            'expired-callback': function expiredCallback() {
+              window.DD_LOGS && DD_LOGS.logger.warn("Turnstile expired");
+            },
+            'timeout-callback': function timeoutCallback() {
+              window.DD_LOGS && DD_LOGS.logger.warn("Turnstile timeout");
+              settle("ERROR:TURNSTILE:TIMEOUT");
+            }
+          });
+        } catch (error) {
+          window.DD_LOGS && DD_LOGS.logger.error("Turnstile render failed: ".concat(error && error.message), { error: error && error.message });
+          settle("ERROR:TURNSTILE:RENDER_FAILED");
+        }
       });
     };
   </script>
@@ -153,7 +191,7 @@
 
   <script src="/bg.js"></script>
   <script src="/bundle.js" type="module"></script>
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" crossorigin="anonymous" defer></script>
+  <script id="turnstile-script" src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onloadTurnstileCallback" crossorigin="anonymous" defer onerror="window.__turnstileScriptStatus='failed'; window.onTurnstileScriptError && window.onTurnstileScriptError();"></script>
 </body>
 
 </html>

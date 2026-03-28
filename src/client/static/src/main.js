@@ -34,6 +34,8 @@ const UIElements = {
     videoElement: document.getElementById('video-element'),
 };
 
+const TURNSTILE_LOAD_TIMEOUT_MS = 10000;
+
 window.streamState = new Proxy({
     isServerAvailable: false,
     isTokenAvailable: false,
@@ -53,6 +55,11 @@ window.streamState = new Proxy({
     }
 });
 
+const getTranslation = (key, fallback) => {
+    const translated = locales.getTranslationByKey(key);
+    return (translated && translated !== `[${key}]`) ? translated : fallback;
+};
+
 const setDataFromUrlParams = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const streamId = urlParams.get('id');
@@ -66,11 +73,20 @@ const setDataFromUrlParams = () => {
     }
 };
 
-const checkWebRTCSupport = () => {
+const getStartupCompatibilityError = () => {
     const RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
-    if (typeof RTCPeerConnection === 'undefined') {
-        window.streamState.error = "ERROR:WEBRTC_NOT_SUPPORTED";
-    }
+    if (typeof RTCPeerConnection === 'undefined') return 'ERROR:WEBRTC_NOT_SUPPORTED';
+    if (!window.crypto || typeof window.crypto.subtle === 'undefined') return 'ERROR:WEBRTC_NOT_SUPPORTED';
+    return null;
+};
+
+const startTurnstileLoadWatchdog = () => {
+    setTimeout(() => {
+        if (window.__turnstileScriptStatus === 'loaded' || window.streamState.error) return;
+        window.streamState.error = (window.__turnstileScriptStatus === 'failed')
+            ? 'ERROR:TURNSTILE:SCRIPT_LOAD_FAILED'
+            : 'ERROR:TURNSTILE:LOAD_TIMEOUT';
+    }, TURNSTILE_LOAD_TIMEOUT_MS);
 };
 
 const supportedLocales = ['zh-TW', 'ar', 'de', 'en', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'nl', 'pl', 'pt', 'ru', 'tr', 'uk', 'zh'];
@@ -81,7 +97,12 @@ locales.fetchTranslation().then(() => {
     const initialize = () => {
         locales.translateDocument();
         setDataFromUrlParams();
-        checkWebRTCSupport();
+        const startupCompatibilityError = getStartupCompatibilityError();
+        if (startupCompatibilityError) {
+            window.streamState.error = startupCompatibilityError;
+            return;
+        }
+        startTurnstileLoadWatchdog();
     };
 
     if (document.readyState === 'loading') {
@@ -117,6 +138,72 @@ const streamingContainerOnMouseOut = () => {
     UIElements.streamingHeader.className = 'hidden';
 };
 
+const renderState = (state) => {
+    if (state.streamId) {
+        if (window.DD_LOGS && DD_LOGS.setGlobalContextProperty) {
+            DD_LOGS.setGlobalContextProperty('streamId', state.streamId);
+        }
+    } else if (window.DD_LOGS && DD_LOGS.removeGlobalContextProperty) {
+        DD_LOGS.removeGlobalContextProperty('streamId');
+    }
+
+    UIElements.startContainer.style.display = (!state.isStreamJoined) ? 'block' : 'none';
+    UIElements.streamWaitContainer.style.display = (state.isStreamJoined && !state.isStreamRunning) ? 'block' : 'none';
+    UIElements.streamingHeader.style.display = (state.isStreamRunning) ? 'block' : 'none';
+    UIElements.videoContainer.style.display = (state.isStreamRunning) ? 'block' : 'none';
+
+    UIElements.joinButtonLoader.style.display = (!state.error && (!state.isServerAvailable || (state.isServerAvailable && state.isTokenAvailable) || state.isJoiningStream)) ? 'block' : 'none';
+
+    UIElements.streamJoinButton.style.display = (state.isSocketConnected && !state.isJoiningStream) ? 'inline-block' : 'none';
+
+    UIElements.streamErrorCell.style.display = (state.error) ? 'block' : 'none';
+
+    if (state.error) {
+        const isUserCorrectableError = (state.error === 'ERROR:WRONG_STREAM_ID' || state.error === 'ERROR:NO_STREAM_HOST_FOUND' || state.error === 'ERROR:WRONG_STREAM_PASSWORD');
+        const isTurnstileError = state.error.startsWith('ERROR:TURNSTILE:');
+        switch (state.error) {
+            case 'ERROR:WEBRTC_NOT_SUPPORTED':
+                UIElements.streamErrorCell.innerText = getTranslation(state.error, 'This web browser does not support WebRTC. Please consider using a different browser.');
+                break;
+            case 'ERROR:TURNSTILE:200100':
+                UIElements.streamErrorCell.innerText = getTranslation(state.error, 'Incorrect device clock time. Please adjust and reload the page.');
+                break;
+            case 'ERROR:TURNSTILE:SCRIPT_LOAD_FAILED':
+                UIElements.streamErrorCell.innerText = getTranslation(state.error, 'Security check could not be loaded on this device. Please reload the page or try another browser/device.');
+                break;
+            case 'ERROR:TURNSTILE:LOAD_TIMEOUT':
+            case 'ERROR:TURNSTILE:TIMEOUT':
+                UIElements.streamErrorCell.innerText = getTranslation(state.error, 'Security check timed out on this device. Please reload the page or try another browser/device.');
+                break;
+            case 'ERROR:WRONG_STREAM_ID':
+                UIElements.streamErrorCell.innerText = getTranslation(state.error, 'Wrong stream id');
+                break;
+            case 'ERROR:NO_STREAM_HOST_FOUND':
+                UIElements.streamErrorCell.innerText = getTranslation(state.error, 'Stream not found');
+                break;
+            case 'ERROR:WRONG_STREAM_PASSWORD':
+                UIElements.streamErrorCell.innerText = getTranslation(state.error, 'Wrong stream password');
+                break;
+            default:
+                UIElements.streamErrorCell.innerText = isTurnstileError
+                    ? getTranslation('ERROR:TURNSTILE:FAILED', 'Security check failed on this device. Please reload the page or try another browser/device.')
+                    : `${getTranslation('ERROR:UNSPECIFIED', 'Something went wrong. Reload this page and try again.')}\n[${state.error}]\n\n`;
+                break;
+        }
+
+        UIElements.streamJoinCell.style.display = isUserCorrectableError ? '' : 'none';
+        return;
+    }
+
+    UIElements.streamJoinCell.style.display = '';
+
+    if (state.isStreamJoined) {
+        UIElements.streamWaitStreamId.innerText = (locales.getTranslationByKey(UIElements.streamWaitStreamId.getAttribute('data-i18n-key')) || 'Stream Id: {streamId}').replace('{streamId}', state.streamId);
+
+        UIElements.streamingContainerText.innerText = (locales.getTranslationByKey(UIElements.streamingContainerText.getAttribute('data-i18n-key')) || 'Stream Id: {streamId}').replace('{streamId}', state.streamId);
+    }
+};
+
 const onNewState = (key, oldValue, newValue, state) => {
     if (newValue === oldValue) return;
     log('debug', `onNewState: [${key}] ${oldValue} => ${newValue}\n${JSON.stringify(state)}`);
@@ -125,60 +212,7 @@ const onNewState = (key, oldValue, newValue, state) => {
         log('warn', `onNewState.error: ${state.error}`, { error: state.error });
     }
 
-    if (key === 'streamId') {
-        if (state.streamId) {
-            if (window.DD_LOGS && DD_LOGS.setGlobalContextProperty) {
-                DD_LOGS.setGlobalContextProperty('streamId', state.streamId);
-            }
-        } else {
-            if (window.DD_LOGS && DD_LOGS.removeGlobalContextProperty) {
-                DD_LOGS.removeGlobalContextProperty('streamId');
-            }
-        }
-    }
-
-    UIElements.startContainer.style.display = (!state.isStreamJoined) ? 'block' : 'none';
-    UIElements.streamWaitContainer.style.display = (state.isStreamJoined && !state.isStreamRunning) ? 'block' : 'none';
-    UIElements.streamingHeader.style.display = (state.isStreamRunning) ? 'block' : 'none';
-    UIElements.videoContainer.style.display = (state.isStreamRunning) ? 'block' : 'none';
-
-    UIElements.joinButtonLoader.style.display = (!state.isServerAvailable || (state.isServerAvailable && state.isTokenAvailable) || state.isJoiningStream) ? 'block' : 'none';
-
-    UIElements.streamJoinButton.style.display = (state.isSocketConnected && !state.isJoiningStream) ? 'inline-block' : 'none';
-
-    UIElements.streamErrorCell.style.display = (state.error) ? 'block' : 'none';
-
-    if (state.error) {
-        switch (state.error) {
-            case 'ERROR:TURNSTILE:200100':
-                UIElements.streamErrorCell.innerText = locales.getTranslationByKey(state.error) || 'Incorrect device clock time. Please adjust and reload the page.';
-                UIElements.streamJoinCell.style.display = 'none';
-                UIElements.streamJoinButton.style.display = 'none';
-                UIElements.joinButtonLoader.style.display = 'none';
-                break;
-            case 'ERROR:WRONG_STREAM_ID':
-                UIElements.streamErrorCell.innerText = locales.getTranslationByKey(state.error) || 'Wrong stream id';
-                break;
-            case 'ERROR:NO_STREAM_HOST_FOUND':
-                UIElements.streamErrorCell.innerText = locales.getTranslationByKey(state.error) || 'Stream not found';
-                break;
-            case 'ERROR:WRONG_STREAM_PASSWORD':
-                UIElements.streamErrorCell.innerText = locales.getTranslationByKey(state.error) || 'Wrong stream password';
-                break;
-            default:
-                UIElements.streamErrorCell.innerText = (locales.getTranslationByKey('ERROR:UNSPECIFIED') || 'Something went wrong. Reload this page and try again.') + `\n[${state.error}]\n\n`;
-                UIElements.streamJoinCell.style.display = 'none';
-                UIElements.streamJoinButton.style.display = 'none';
-                UIElements.joinButtonLoader.style.display = 'none';
-                break;
-        }
-    }
-
-    if (key === 'isStreamJoined' && state.isStreamJoined) {
-        UIElements.streamWaitStreamId.innerText = (locales.getTranslationByKey(UIElements.streamWaitStreamId.getAttribute('data-i18n-key')) || 'Stream Id: {streamId}').replace('{streamId}', state.streamId);
-
-        UIElements.streamingContainerText.innerText = (locales.getTranslationByKey(UIElements.streamingContainerText.getAttribute('data-i18n-key')) || 'Stream Id: {streamId}').replace('{streamId}', state.streamId);
-    }
+    renderState(state);
 
     if (key === 'isStreamRunning') {
         if (state.isStreamRunning) {
@@ -199,6 +233,8 @@ const onNewState = (key, oldValue, newValue, state) => {
         }
     }
 };
+
+renderState(window.streamState);
 
 const onNewTrack = (track) => {
     log('debug', `onNewTrack: ${track.id}`, { track_id: track.id });
@@ -228,7 +264,19 @@ UIElements.streamJoinButton.addEventListener('click', (e) => {
 });
 
 window.onloadTurnstileCallback = () => {
+    window.__turnstileScriptStatus = 'loaded';
+    if (window.streamState.error) return;
+    const startupCompatibilityError = getStartupCompatibilityError();
+    if (startupCompatibilityError) {
+        window.streamState.error = startupCompatibilityError;
+        return;
+    }
     webRTC.waitForServerOnlineAndConnect();
+};
+
+window.onTurnstileScriptError = () => {
+    window.__turnstileScriptStatus = 'failed';
+    window.streamState.error = 'ERROR:TURNSTILE:SCRIPT_LOAD_FAILED';
 };
 
 window.addEventListener('beforeunload', () => {
@@ -240,7 +288,13 @@ function generateRandomString(length) {
     const charactersLength = characters.length;
     let result = '';
     const array = new Uint8Array(length);
-    window.crypto.getRandomValues(array);
+    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+        window.crypto.getRandomValues(array);
+    } else {
+        for (let i = 0; i < length; i++) {
+            array[i] = Math.floor(Math.random() * 256);
+        }
+    }
 
     for (let i = 0; i < length; i++) {
         result += characters.charAt(array[i] % charactersLength);
