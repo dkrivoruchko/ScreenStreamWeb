@@ -1,11 +1,3 @@
-function log(level, message, context = {}) {
-    if (window.DD_LOGS && DD_LOGS.logger) {
-        DD_LOGS.logger[level](message, context);
-    } else {
-        console[level](message, context);
-    }
-}
-
 export class Locales {
     constructor(supportedTags, browserLanguages) {
         this.defaultLocale = 'en';
@@ -15,23 +7,18 @@ export class Locales {
     }
 
     async fetchTranslation() {
-        try {
-            const response = await fetch(`/lang/${this.selectedLocale}.json`);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch translations for locale '${this.selectedLocale}'.`);
-            }
-            this.translations = await response.json();
+        const response = await fetch(`/lang/${this.selectedLocale}.json`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch translations for locale '${this.selectedLocale}'.`);
+        }
+        this.translations = await response.json();
 
-            if (this.selectedLocale !== this.defaultLocale) {
-                const defaultResponse = await fetch(`/lang/${this.defaultLocale}.json`);
-                if (!defaultResponse.ok) {
-                    throw new Error(`Failed to fetch default translations for locale '${this.defaultLocale}'.`);
-                }
-                this.defaultTranslations = await defaultResponse.json();
+        if (this.selectedLocale !== this.defaultLocale) {
+            const defaultResponse = await fetch(`/lang/${this.defaultLocale}.json`);
+            if (!defaultResponse.ok) {
+                throw new Error(`Failed to fetch default translations for locale '${this.defaultLocale}'.`);
             }
-        } catch (error) {
-            log('warn', `Locales: fetchTranslation failed: ${error.message}`, { error });
-            throw error;
+            this.defaultTranslations = await defaultResponse.json();
         }
     }
 
@@ -49,11 +36,7 @@ export class Locales {
         document.querySelectorAll('[data-i18n-key]').forEach((element) => {
             const key = element.getAttribute('data-i18n-key');
             const value = this.getTranslationByKey(key);
-            if (value) {
-                element.innerHTML = value;
-            } else {
-                log('warn', `Translation missing for key: '${key}'`);
-            }
+            if (value !== `[${key}]`) element.innerHTML = value;
         });
     }
 
@@ -88,4 +71,4 @@ export class Locales {
 
         return this.defaultLocale;
     }
-} 
+}

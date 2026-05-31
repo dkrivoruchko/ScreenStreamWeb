@@ -27,6 +27,7 @@ export default async function (socket, next) {
   const timeoutId = setTimeout(() => {
     next(new Error('Authentication timeout'));
   }, AUTH_TIMEOUT);
+  let authRole = 'unknown';
 
   try {
     const hostToken = socket.handshake.auth.hostToken;
@@ -35,7 +36,8 @@ export default async function (socket, next) {
     if (!hostToken && !clientToken) throw new Error('NO_TOKEN_FOUND');
 
     if (clientToken) {
-      logger.debug(JSON.stringify({ socket: socket.id, message: clientToken }));
+      authRole = 'client';
+      logger.debug({ socket: socket.id, message: 'Client Turnstile token received' });
 
       const data = JSON.stringify({ 'secret': TURNSTYLE_SECRET_KEY, 'response': clientToken });
 
@@ -58,13 +60,14 @@ export default async function (socket, next) {
       socket.data.isClient = true;
       socket.data.clientId = outcome.cdata;
 
+      logger.info({ event_name: 'auth_outcome', socket: socket.id, role: authRole, result: 'ok', provider: 'turnstile', clientId: outcome.cdata, message: 'Client auth outcome' });
       clearTimeout(timeoutId);
       next();
       return;
     }
 
     if (hostToken) {
-      const device = socket.handshake.auth.device;
+      authRole = 'host';
       const data = JSON.stringify({ integrity_token: hostToken });
 
       await gtoken.getToken();
@@ -95,9 +98,14 @@ export default async function (socket, next) {
       const timeout = Date.now() - payload.requestDetails.timestampMillis;
       if (timeout > HOST_TOKEN_TIMEOUT) throw new Error(`TOKEN_EXPIRED:${Math.trunc(timeout / 60000)}`);
 
+      let authResult = 'ok';
+      let authReason;
+      let appRecognitionVerdict;
+      let deviceRecognitionVerdict;
       try {
         // deviceIntegrity
         if (!payload.deviceIntegrity) throw new Error('EMPTY_DEVICE_INTEGRITY');
+        deviceRecognitionVerdict = payload.deviceIntegrity.deviceRecognitionVerdict;
 
         if (!payload.deviceIntegrity.deviceRecognitionVerdict) throw new Error('FAIL_DEVICE_INTEGRITY');
 
@@ -105,6 +113,7 @@ export default async function (socket, next) {
 
         // appIntegrity
         if (!payload.appIntegrity) throw new Error('EMPTY_APP_INTEGRITY');
+        appRecognitionVerdict = payload.appIntegrity.appRecognitionVerdict;
 
         if (ANDROID_APP_PACKAGE.endsWith('.dev')) { // Dev build
           if (payload.appIntegrity.appRecognitionVerdict !== 'UNRECOGNIZED_VERSION') throw new Error('WRONG_APP_VERDICT');
@@ -119,22 +128,22 @@ export default async function (socket, next) {
         if (!payload.appIntegrity.certificateSha256Digest.includes(ANDROID_APP_CERT256)) throw new Error('APP_INTEGRITY_WRONG_DIGEST');
         // Don't check for now tokenPayload.appIntegrity.versionCode
 
-        logger.debug(JSON.stringify({ socket: socket.id, message: "Host Token OK: " + device + "\n" + JSON.stringify(payload) }));
-
         // accountDetails 
         // Don't check for now
       } catch (error) {
-        logger.error(JSON.stringify({ socket: socket.id, error: `ERROR:TOKEN_VERIFICATION_FAILED:${error.message}`, message: "Host Token ERROR: " + device + "\n" + JSON.stringify(payload) }));
+        authResult = 'degraded';
+        authReason = `ERROR:TOKEN_VERIFICATION_FAILED:${error.message}`;
       }
 
       socket.data.isHost = true;
       socket.data.isClient = false;
+      logger[authResult === 'ok' ? 'info' : 'warn']({ event_name: 'auth_outcome', socket: socket.id, role: authRole, result: authResult, reason: authReason, provider: 'play_integrity', request_age_ms: timeout, appRecognitionVerdict, deviceRecognitionVerdict, message: 'Host auth outcome' });
       clearTimeout(timeoutId);
       next();
     }
 
   } catch (cause) {
-    logger.warn(JSON.stringify({ socket: socket.id, error: 'ERROR:TOKEN_VERIFICATION_FAILED', message: cause.message }));
+    logger.warn({ event_name: 'auth_outcome', socket: socket.id, role: authRole, result: 'error', reason: 'ERROR:TOKEN_VERIFICATION_FAILED', message: cause.message });
     clearTimeout(timeoutId);
     next(new Error(`ERROR:TOKEN_VERIFICATION_FAILED:${cause.message}`));
   }

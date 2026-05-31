@@ -6,53 +6,65 @@ const validHostEvents = ['STREAM:CREATE', 'STREAM:REMOVE', 'STREAM:START', 'HOST
 const MAX_ERRORS_PER_SOCKET = 10;
 const MAX_PAYLOAD_SIZE = 1024 * 1024; // 1MB
 
-export default function (io, socket) {
-    socket.onAny(async (event, ...args) => {
+export default function (socket) {
+    const rejectSocket = async (event, cause) => {
+        try {
+            await socket.timeout(3000).emitWithAck('SOCKET:ERROR', { status: `SOCKET_CHECK_ERROR:${cause.message}` });
+        } catch (err) {
+        }
+        socket.disconnect(true);
+    };
+
+    socket.use((packet, next) => {
+        const [event, ...args] = packet;
         try {
             const payloadSize = JSON.stringify(args).length;
             if (payloadSize > MAX_PAYLOAD_SIZE) {
-                logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'PAYLOAD_TOO_LARGE', size: payloadSize }));
+                logger.warn({ socket_event: `[${event}]`, socket: socket.id, reason: 'PAYLOAD_TOO_LARGE', size: payloadSize });
                 throw new Error('PAYLOAD_TOO_LARGE');
             }
 
             if (!socket.data || (socket.data.isClient !== true && socket.data.isHost !== true)) {
-                logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'UNVERIFIED_SOCKET', message: "Unverified socket. Disconnecting" }));
+                logger.warn({ socket_event: `[${event}]`, socket: socket.id, reason: 'UNVERIFIED_SOCKET' });
                 throw new Error('UNVERIFIED_SOCKET');
             }
 
             if (socket.data.isClient === true && socket.data.isHost === true) {
-                logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'INVALID_SOCKET_STATE', message: "Socket is host and client. Disconnecting" }));
+                logger.warn({ socket_event: `[${event}]`, socket: socket.id, reason: 'INVALID_SOCKET_STATE' });
                 throw new Error('INVALID_SOCKET_STATE');
             }
 
             if (socket.data.isClient === true) {
                 if (!socket.data.clientId || typeof socket.data.clientId !== 'string' || socket.data.clientId.length === 0) {
-                    logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'NO_CLIENT_ID', message: "Client id not set. Disconnecting" }));
+                    logger.warn({ socket_event: `[${event}]`, socket: socket.id, reason: 'NO_CLIENT_ID' });
                     throw new Error('NO_CLIENT_ID');
                 }
 
                 if (!validClientEvents.includes(event)) {
-                    logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'UNKNOWN_CLIENT_EVENT', message: "Unknown client event. Disconnecting" }));
+                    logger.warn({ socket_event: `[${event}]`, socket: socket.id, reason: 'UNKNOWN_CLIENT_EVENT' });
                     throw new Error('UNKNOWN_CLIENT_EVENT');
                 }
 
                 if (socket.data.errorCounter >= MAX_ERRORS_PER_SOCKET) {
-                    logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'ERROR_LIMIT_REACHED', message: "Client error limit reached. Disconnecting" }));
+                    logger.warn({ socket_event: `[${event}]`, socket: socket.id, reason: 'ERROR_LIMIT_REACHED' });
                     throw new Error('ERROR_LIMIT_REACHED');
                 }
             }
 
             if (socket.data.isHost === true && !validHostEvents.includes(event)) {
-                logger.error(JSON.stringify({ socket_event: `[${event}]`, socket: socket.id, error: 'UNKNOWN_HOST_EVENT', message: "Unknown host event. Disconnecting" }));
+                logger.warn({ socket_event: `[${event}]`, socket: socket.id, reason: 'UNKNOWN_HOST_EVENT' });
                 throw new Error('UNKNOWN_HOST_EVENT');
             }
 
-        } catch (cause) {
-            try {
-                await socket.timeout(3000).emitWithAck('SOCKET:ERROR', { status: `SOCKET_CHECK_ERROR:${cause.message}` });
-            } catch (err) {
+            if (typeof args.at(-1) !== 'function') {
+                logger.warn({ socket_event: `[${event}]`, socket: socket.id, reason: 'ACK_CALLBACK_REQUIRED' });
+                throw new Error('ACK_CALLBACK_REQUIRED');
             }
-            socket.disconnect(true);
+
+            next();
+        } catch (cause) {
+            rejectSocket(event, cause);
+            next(cause);
         }
     });
 }
