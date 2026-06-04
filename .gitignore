@@ -131,3 +131,6 @@ dist
 
 .vs
 .idea
+
+# Build artifacts
+src/client/static/bundle.js
