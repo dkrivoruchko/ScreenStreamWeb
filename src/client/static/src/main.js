@@ -25,8 +25,9 @@ const UIElements = {
     passwordInput: document.getElementById('stream-password'),
     streamJoinButton: document.getElementById('streamJoinButton'),
     streamCancelButton: document.getElementById('streamCancelButton'),
-    joinButtonLoader: document.getElementById('joinButtonLoader'),
+    joinProgress: document.getElementById('join-progress'),
     joinStatus: document.getElementById('join-status'),
+    turnstileContainer: document.getElementById('turnstile-container'),
     streamJoinCell: document.getElementById('stream-join'),
     streamErrorCell: document.getElementById('stream-error'),
     streamWaitContainer: document.getElementById('stream-wait-container'),
@@ -62,6 +63,7 @@ const ERROR_UI_KEYS = new Map([
     ['ERROR:TIMEOUT_OR_NO_RESPONSE', 'ERROR:CONNECTION_FAILED'],
     ['WEBRTC_ERROR:CONNECT_ERROR', 'ERROR:CONNECTION_FAILED'],
     ['WEBRTC_ERROR:SOCKET_CONNECT_FAILED', 'ERROR:CONNECTION_FAILED'],
+    ['WEBRTC_ERROR:SOCKET_IO_CLIENT_UNAVAILABLE', 'ERROR:CONNECTION_FAILED'],
     ['WEBRTC_ERROR:NO_SOCKET_CONNECTED', 'ERROR:CONNECTION_FAILED'],
     ['WEBRTC_ERROR:NO_SOCKET_AVAILABLE', 'ERROR:CONNECTION_FAILED'],
 ]);
@@ -113,6 +115,19 @@ const getErrorUiKey = (error) => {
     return 'ERROR:UNSPECIFIED';
 };
 
+const decorateAboutLinks = () => {
+    const opensInNewTab = getTranslation('opens-new-tab', 'opens in a new tab');
+    document.querySelectorAll('[data-i18n-key="stream-about"] a[href^="https://"]').forEach((link) => {
+        const linkText = link.textContent.trim();
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.classList.add('external-link');
+        if (linkText) link.setAttribute('aria-label', `${linkText} (${opensInNewTab})`);
+        if (link.querySelector('.external-link-icon')) return;
+        link.insertAdjacentHTML('beforeend', '<svg class="external-link-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 3h8v8h-1.5V5.56l-7.47 7.47-1.06-1.06 7.47-7.47H5V3Z"/><path d="M3.5 4.5H2v9.5h9.5v-1.5h-8v-8Z"/></svg>');
+    });
+};
+
 const normalizeErrorCode = (error) => {
     if (typeof error === 'string') return error;
     if (error instanceof Error) return error.message || error.name || 'ERROR:UNSPECIFIED';
@@ -142,10 +157,8 @@ const getStartupCompatibilityError = () => {
 
 const startTurnstileLoadWatchdog = () => {
     setTimeout(() => {
-        if (window.__turnstileScriptStatus === 'loaded' || window.streamState.error) return;
-        window.streamState.error = (window.__turnstileScriptStatus === 'failed')
-            ? 'ERROR:TURNSTILE:SCRIPT_LOAD_FAILED'
-            : 'ERROR:TURNSTILE:TIMEOUT';
+        if (window.__turnstileScriptStatus === 'loaded' || window.__turnstileScriptStatus === 'failed') return;
+        log('warn', 'Turnstile script load timeout', { event_name: 'turnstile_script_load', phase: 'script', result: 'timeout', reason: 'ERROR:TURNSTILE:SCRIPT_LOAD_TIMEOUT' });
     }, TURNSTILE_LOAD_TIMEOUT_MS);
 };
 
@@ -154,6 +167,7 @@ const locales = new Locales(supportedLocales, navigator.languages);
 
 const initialize = () => {
     locales.translateDocument();
+    decorateAboutLinks();
     document.getElementById('client-id').innerText = publicId;
     const clientIdText = `${getTranslation('client-id', 'Client ID:')} ${publicId}`;
     document.getElementById('streaming-client-id').innerText = clientIdText;
@@ -206,12 +220,18 @@ const renderState = (state) => {
     UIElements.streamingHeader.style.display = (!state.error && state.isStreamRunning) ? 'block' : 'none';
     UIElements.videoContainer.style.display = (!state.error && state.isStreamRunning) ? 'block' : 'none';
 
-    UIElements.joinButtonLoader.style.display = (!state.error && (!state.isServerAvailable || (state.isServerAvailable && state.isTokenAvailable) || state.isJoiningStream)) ? 'block' : 'none';
-    UIElements.joinStatus.style.display = (!state.error && state.isJoiningStream) ? 'block' : 'none';
-    UIElements.streamCancelButton.style.display = (!state.error && state.isJoiningStream) ? 'inline-block' : 'none';
-    UIElements.joinStatus.innerText = getTranslation('stream-connecting', 'Connecting...');
+    const isJoining = !state.error && state.isJoiningStream;
+    UIElements.streamJoinCell.className = isJoining ? 'joining' : '';
+    UIElements.joinProgress.style.display = isJoining ? 'flex' : 'none';
+    const hasActiveTurnstileTokenFlow = UIElements.turnstileContainer.children.length > 0 || typeof window.__activeTurnstileCancel === 'function';
+    if (!isJoining && hasActiveTurnstileTokenFlow && typeof window.clearTurnstileTokenWidget === 'function') {
+        window.clearTurnstileTokenWidget();
+    }
+    UIElements.joinStatus.innerText = (state.isServerAvailable && !state.isTokenAvailable && !state.isSocketConnected)
+        ? getTranslation('stream-verifying', 'Verifying...')
+        : getTranslation('stream-connecting', 'Connecting...');
 
-    UIElements.streamJoinButton.style.display = (state.isSocketConnected && !state.isJoiningStream) ? 'inline-block' : 'none';
+    UIElements.streamJoinButton.style.display = (!state.isJoiningStream) ? 'inline-block' : 'none';
 
     UIElements.streamErrorCell.style.display = (state.error) ? 'block' : 'none';
 
@@ -310,23 +330,25 @@ UIElements.streamCancelButton.addEventListener('click', (e) => {
 UIElements.startForm.addEventListener('submit', (e) => {
     e.preventDefault();
     if (!UIElements.startForm.reportValidity()) return;
+    log('info', 'WebRTC.joinStream: user submitted join form', { event_name: 'join_submit', streamId: UIElements.streamIdInput.value });
     webRTC.joinStream(UIElements.streamIdInput.value, UIElements.passwordInput.value);
 });
 
 window.onloadTurnstileCallback = () => {
     window.__turnstileScriptStatus = 'loaded';
+    window.dispatchEvent(new Event('turnstile-script-loaded'));
+    log('info', 'Turnstile script loaded', { event_name: 'turnstile_script_load', phase: 'script', result: 'ok' });
     if (window.streamState.error) return;
     const startupCompatibilityError = getStartupCompatibilityError();
     if (startupCompatibilityError) {
         window.streamState.error = startupCompatibilityError;
-        return;
     }
-    webRTC.waitForServerOnlineAndConnect();
 };
 
 window.onTurnstileScriptError = () => {
     window.__turnstileScriptStatus = 'failed';
-    window.streamState.error = 'ERROR:TURNSTILE:SCRIPT_LOAD_FAILED';
+    window.dispatchEvent(new Event('turnstile-script-failed'));
+    log('warn', 'Turnstile script failed to load', { event_name: 'turnstile_script_load', phase: 'script', result: 'error', reason: 'ERROR:TURNSTILE:SCRIPT_LOAD_FAILED' });
 };
 
 window.addEventListener('beforeunload', () => {

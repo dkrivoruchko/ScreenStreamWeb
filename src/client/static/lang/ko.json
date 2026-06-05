@@ -9,6 +9,8 @@
     "stream-join": "스트림 참여",
     "stream-cancel": "취소",
     "stream-connecting": "연결 중...",
+    "stream-verifying": "확인 중...",
+    "opens-new-tab": "새 탭에서 열림",
     "stream-connecting-stream": "스트림에 연결하는 중...",
     "stream-reconnecting": "스트림에 다시 연결하는 중...",
     "stream-id-header": "스트림 ID: {streamId}",

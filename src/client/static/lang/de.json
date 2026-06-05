@@ -9,6 +9,8 @@
     "stream-join": "Stream beitreten",
     "stream-cancel": "Abbrechen",
     "stream-connecting": "Verbindung wird hergestellt...",
+    "stream-verifying": "Überprüfung...",
+    "opens-new-tab": "öffnet in einem neuen Tab",
     "stream-connecting-stream": "Verbindung zum Stream wird hergestellt...",
     "stream-reconnecting": "Verbindung zum Stream wird wiederhergestellt...",
     "stream-id-header": "Stream-ID: {streamId}",

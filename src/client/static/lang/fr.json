@@ -9,6 +9,8 @@
     "stream-join": "Rejoindre la diffusion",
     "stream-cancel": "Annuler",
     "stream-connecting": "Connexion...",
+    "stream-verifying": "Vérification...",
+    "opens-new-tab": "s'ouvre dans un nouvel onglet",
     "stream-connecting-stream": "Connexion à la diffusion...",
     "stream-reconnecting": "Reconnexion à la diffusion...",
     "stream-id-header": "ID de diffusion : {streamId}",

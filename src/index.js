@@ -48,11 +48,11 @@ const expressApp = express()
       'Content-Security-Policy',
       [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://cdn.socket.io https://www.datadoghq-browser-agent.com https://challenges.cloudflare.com https://static.cloudflareinsights.com",
-        "script-src-elem 'self' 'unsafe-inline' https://cdn.socket.io https://www.datadoghq-browser-agent.com https://challenges.cloudflare.com https://static.cloudflareinsights.com",
+        "script-src 'self' 'unsafe-inline' https://www.datadoghq-browser-agent.com https://challenges.cloudflare.com https://static.cloudflareinsights.com",
+        "script-src-elem 'self' 'unsafe-inline' https://www.datadoghq-browser-agent.com https://challenges.cloudflare.com https://static.cloudflareinsights.com",
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: android-webview-video-poster https://challenges.cloudflare.com https://static.cloudflareinsights.com",
-        "connect-src 'self' wss: https://cdn.socket.io https://browser-intake-datadoghq.com https://logs.browser-intake-datadoghq.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
+        "connect-src 'self' wss: https://browser-intake-datadoghq.com https://logs.browser-intake-datadoghq.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
         "frame-src 'self' https://challenges.cloudflare.com",
         "base-uri 'self'",
         "object-src 'none'",
@@ -66,7 +66,6 @@ const expressApp = express()
     const allowedOrigins = [
       'https://www.datadoghq-browser-agent.com',
       'https://logs.browser-intake-datadoghq.com',
-      'https://cdn.socket.io',
       'https://challenges.cloudflare.com',
     ];
     const origin = req.headers.origin;
