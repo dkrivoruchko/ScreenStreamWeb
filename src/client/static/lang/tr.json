@@ -9,6 +9,8 @@
     "stream-join": "Akışa katıl",
     "stream-cancel": "İptal",
     "stream-connecting": "Bağlanıyor...",
+    "stream-verifying": "Doğrulanıyor...",
+    "opens-new-tab": "yeni sekmede açılır",
     "stream-connecting-stream": "Akışa bağlanılıyor...",
     "stream-reconnecting": "Akışa yeniden bağlanılıyor...",
     "stream-id-header": "Akış kimliği: {streamId}",

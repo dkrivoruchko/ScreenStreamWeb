@@ -9,6 +9,8 @@
     "stream-join": "加入串流",
     "stream-cancel": "取消",
     "stream-connecting": "連線中...",
+    "stream-verifying": "正在驗證...",
+    "opens-new-tab": "在新分頁中開啟",
     "stream-connecting-stream": "正在連線到串流...",
     "stream-reconnecting": "正在重新連線到串流...",
     "stream-id-header": "串流 ID: {streamId}",

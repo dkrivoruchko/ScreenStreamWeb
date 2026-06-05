@@ -45,11 +45,25 @@
     window.DD_LOGS && DD_LOGS.setGlobalContextProperty('web_client_version', $PACKAGE_VERSION$);
   </script>
 
-  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" crossorigin="anonymous"></script>
   <script>
     "use strict";
 
     window.__turnstileScriptStatus = "loading";
+    window.__activeTurnstileCancel = null;
+
+    function clearTurnstileContainer() {
+      var turnstileContainer = document.getElementById("turnstile-container");
+      if (turnstileContainer) turnstileContainer.innerHTML = "";
+    }
+
+    window.clearTurnstileTokenWidget = function () {
+      var activeCancel = window.__activeTurnstileCancel;
+      if (typeof activeCancel === "function") {
+        activeCancel();
+        return;
+      }
+      clearTurnstileContainer();
+    };
 
     function isRetryableTurnstileError(errorCode) {
       if (!errorCode) return false;
@@ -57,24 +71,58 @@
       return /^300/.test(errorCode) || /^600/.test(errorCode);
     }
 
+    function waitForTurnstileScript(callback) {
+      if (window.turnstile && typeof window.turnstile.render === "function") {
+        callback(true);
+        return function () {};
+      }
+      if (window.__turnstileScriptStatus === "failed") {
+        callback(false);
+        return function () {};
+      }
+
+      var timeoutId = setTimeout(function () {
+        cleanup();
+        callback(false);
+      }, 10000);
+
+      function cleanup() {
+        clearTimeout(timeoutId);
+        window.removeEventListener("turnstile-script-loaded", onLoaded);
+        window.removeEventListener("turnstile-script-failed", onFailed);
+      }
+
+      function onLoaded() {
+        cleanup();
+        callback(true);
+      }
+
+      function onFailed() {
+        cleanup();
+        callback(false);
+      }
+
+      window.addEventListener("turnstile-script-loaded", onLoaded, { once: true });
+      window.addEventListener("turnstile-script-failed", onFailed, { once: true });
+      return cleanup;
+    }
+
     window.getTurnstileTokenAsync = function (clientId) {
       return new Promise(function (resolve, reject) {
-        if (!window.turnstile || typeof window.turnstile.render !== "function") {
-          reject("ERROR:TURNSTILE:SCRIPT_LOAD_FAILED");
-          return;
-        }
-
         var isSettled = false;
         var turnstileWidgetId = null;
-        var timeoutId = setTimeout(function () {
-          settle("ERROR:TURNSTILE:TIMEOUT");
-        }, 15000);
+        var timeoutId = null;
+        var waitCleanup = null;
 
         function cleanup() {
+          if (waitCleanup) waitCleanup();
+          waitCleanup = null;
           clearTimeout(timeoutId);
-          if (turnstileWidgetId !== null && window.turnstile && typeof window.turnstile.remove === "function") {
+          if (window.__activeTurnstileCancel === cancelActive) window.__activeTurnstileCancel = null;
+          if (turnstileWidgetId != null && window.turnstile && typeof window.turnstile.remove === "function") {
             window.turnstile.remove(turnstileWidgetId);
           }
+          clearTurnstileContainer();
         }
 
         function settle(value, isSuccess) {
@@ -85,33 +133,54 @@
           else reject(value);
         }
 
-        try {
-          turnstileWidgetId = window.turnstile.render("#turnstile-container", {
-            sitekey: "$TURNSTYLE_SITE_KEY$",
-            cData: clientId,
-            retry: "auto",
-            callback: function callback(token) {
-              window.DD_LOGS && DD_LOGS.logger.debug("Turnstile token received", { event_name: "turnstile_result", phase: "turnstile", result: "ok" });
-              settle(token, true);
-            },
-            'error-callback': function errorCallback(error_code) {
-              var retryable = isRetryableTurnstileError(error_code);
-              window.DD_LOGS && DD_LOGS.logger[retryable ? "debug" : "warn"]("Turnstile error", { event_name: "turnstile_result", phase: "turnstile", result: "error", reason: error_code, retryable: retryable });
-              if (retryable) return;
-              settle("ERROR:TURNSTILE:".concat(error_code || "FAILED"));
-            },
-            'expired-callback': function expiredCallback() {
-              window.DD_LOGS && DD_LOGS.logger.info("Turnstile expired", { event_name: "turnstile_result", phase: "turnstile", result: "expired", retryable: true });
-            },
-            'timeout-callback': function timeoutCallback() {
-              window.DD_LOGS && DD_LOGS.logger.warn("Turnstile timeout", { event_name: "turnstile_result", phase: "turnstile", result: "timeout", reason: "ERROR:TURNSTILE:TIMEOUT", retryable: true });
-              settle("ERROR:TURNSTILE:TIMEOUT");
-            }
-          });
-        } catch (error) {
-          window.DD_LOGS && DD_LOGS.logger.warn("Turnstile render failed", { event_name: "turnstile_result", phase: "turnstile", result: "error", reason: error && error.message || "ERROR:TURNSTILE:RENDER_FAILED", retryable: false });
-          settle("ERROR:TURNSTILE:RENDER_FAILED");
+        function cancelActive() {
+          settle("ERROR:TURNSTILE:CANCELLED");
         }
+
+        window.clearTurnstileTokenWidget();
+        window.__activeTurnstileCancel = cancelActive;
+
+        waitCleanup = waitForTurnstileScript(function (isLoaded) {
+          if (isSettled) return;
+          if (!isLoaded || !window.turnstile || typeof window.turnstile.render !== "function") {
+            settle("ERROR:TURNSTILE:SCRIPT_LOAD_FAILED");
+            return;
+          }
+
+          window.DD_LOGS && DD_LOGS.logger.info("Turnstile token attempt", { event_name: "turnstile_token_attempt", phase: "turnstile", attempt: 1 });
+
+          timeoutId = setTimeout(function () {
+            settle("ERROR:TURNSTILE:TIMEOUT");
+          }, 30000);
+
+          try {
+            turnstileWidgetId = window.turnstile.render("#turnstile-container", {
+              sitekey: "$TURNSTYLE_SITE_KEY$",
+              cData: clientId,
+              retry: "auto",
+              callback: function callback(token) {
+                window.DD_LOGS && DD_LOGS.logger.info("Turnstile token received", { event_name: "turnstile_result", phase: "turnstile", result: "ok" });
+                settle(token, true);
+              },
+              'error-callback': function errorCallback(error_code) {
+                var retryable = isRetryableTurnstileError(error_code);
+                window.DD_LOGS && DD_LOGS.logger[retryable ? "debug" : "warn"]("Turnstile error", { event_name: "turnstile_result", phase: "turnstile", result: "error", reason: error_code, retryable: retryable });
+                if (retryable) return;
+                settle("ERROR:TURNSTILE:".concat(error_code || "FAILED"));
+              },
+              'expired-callback': function expiredCallback() {
+                window.DD_LOGS && DD_LOGS.logger.info("Turnstile expired", { event_name: "turnstile_result", phase: "turnstile", result: "expired", retryable: true });
+              },
+              'timeout-callback': function timeoutCallback() {
+                window.DD_LOGS && DD_LOGS.logger.warn("Turnstile timeout", { event_name: "turnstile_result", phase: "turnstile", result: "timeout", reason: "ERROR:TURNSTILE:TIMEOUT", retryable: true });
+                settle("ERROR:TURNSTILE:TIMEOUT");
+              }
+            });
+          } catch (error) {
+            window.DD_LOGS && DD_LOGS.logger.warn("Turnstile render failed", { event_name: "turnstile_result", phase: "turnstile", result: "error", reason: error && error.message || "ERROR:TURNSTILE:RENDER_FAILED", retryable: false });
+            settle("ERROR:TURNSTILE:RENDER_FAILED");
+          }
+        });
       });
     };
   </script>
@@ -148,20 +217,15 @@
             </td>
           </tr>
           <tr>
-            <td id="stream-join" colspan="2" style="width:300px; height: 70px; text-align: center;">
-              <button id="streamJoinButton" type="submit" data-i18n-key="stream-join" style="display: none;">Join stream</button>
-              <button id="streamCancelButton" type="button" data-i18n-key="stream-cancel" style="display: none;">Cancel</button>
-              <div id="join-status" data-i18n-key="stream-connecting" style="display: none; color: #aaa; font-size: small; margin-top: 8px;">Connecting...</div>
-              <div id="turnstile-container"></div>
-              <div class="loading" id="joinButtonLoader" style="display: none;">
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
+            <td id="stream-join" colspan="2">
+              <div id="join-actions">
+                <button id="streamJoinButton" type="submit" data-i18n-key="stream-join" style="display: none;">Join stream</button>
               </div>
+              <div id="join-progress" style="display: none;">
+                <span id="join-status" data-i18n-key="stream-connecting">Connecting...</span>
+                <button id="streamCancelButton" type="button" data-i18n-key="stream-cancel">Cancel</button>
+              </div>
+              <div id="turnstile-container"></div>
             </td>
           </tr>
         </tbody>

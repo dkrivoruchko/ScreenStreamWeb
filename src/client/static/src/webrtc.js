@@ -1,3 +1,5 @@
+import { io } from 'socket.io-client';
+
 export const isStreamIdValid = (id) => typeof id === 'string' && /^\d{8}$/.test(id);
 export const isStreamPasswordValid = (password) => typeof password === 'string' && /^[a-zA-Z0-9]{6}$/.test(password);
 
@@ -96,9 +98,15 @@ export class WebRTC {
 
         this._isConnecting = false;
         this._timeoutId = null;
+        this._lifecycleId = 0;
         this._negotiationToken = 0;
         this._joinToken = 0;
+        this.pendingJoinRequest = null;
 
+    }
+
+    hasJoinIntent() {
+        return Boolean(this.pendingJoinRequest || this.streamState.isJoiningStream || (this.streamState.isStreamJoined && this.streamState.streamId && this.streamPassword));
     }
 
     hasLocalMediaProgress() {
@@ -142,32 +150,51 @@ export class WebRTC {
 
     async waitForServerOnlineAndConnect() {
         if (this._isConnecting) {
-            log('warn', 'WebRTC.waitForServerOnlineAndConnect: Already connecting...');
+            log('info', 'WebRTC.waitForServerOnlineAndConnect: Already connecting...');
             return;
         }
+        if (!this.hasJoinIntent()) return;
+        const runId = this._lifecycleId;
+        const isCurrent = () => runId === this._lifecycleId && this.hasJoinIntent();
         this._isConnecting = true;
 
-        const online = await this.isServerOnlineAsync();
-        this.streamState.isServerAvailable = online;
+        try {
+            const online = await this.isServerOnlineAsync();
+            if (!isCurrent()) return;
+            this.streamState.isServerAvailable = online;
 
-        if (online) {
-            try {
-                const token = await this.getTurnstileTokenAsync(this.clientId);
-                this.connectSocket(token);
-            } catch (error) {
-                log('warn', `WebRTC.waitForServerOnlineAndConnect: token error: ${error?.message || error}`, { reason: error?.message || error });
-                this.streamState.error = getConnectErrorStatus(error);
-            } finally {
-                this._isConnecting = false;
+            if (!online) {
+                setTimeout(() => {
+                    if (isCurrent()) this.waitForServerOnlineAndConnect();
+                }, 3000);
+                return;
             }
-        } else {
-            this._isConnecting = false;
-            setTimeout(() => this.waitForServerOnlineAndConnect(), 3000);
+
+            const token = await this.getTurnstileTokenAsync(this.clientId);
+            if (!isCurrent()) return;
+            this.connectSocket(token);
+        } catch (error) {
+            if (!isCurrent()) return;
+            const reason = error?.message || error;
+            log('warn', `WebRTC.waitForServerOnlineAndConnect: token error: ${reason}`, { event_name: 'turnstile_result', phase: 'turnstile', result: 'error', reason });
+            this.pendingJoinRequest = null;
+            this.streamState.isJoiningStream = false;
+            this.streamState.error = getConnectErrorStatus(error);
+        } finally {
+            if (runId === this._lifecycleId) this._isConnecting = false;
         }
     }
 
     connectSocket(token) {
         this.streamState.isTokenAvailable = true;
+
+        if (typeof io !== 'function') {
+            log('warn', 'WebRTC.connectSocket: Socket.IO client is unavailable', { event_name: 'socketio_client_load', reason: 'WEBRTC_ERROR:SOCKET_IO_CLIENT_UNAVAILABLE' });
+            this.pendingJoinRequest = null;
+            this.streamState.isJoiningStream = false;
+            this.streamState.error = 'WEBRTC_ERROR:SOCKET_IO_CLIENT_UNAVAILABLE';
+            return;
+        }
 
         if (this.socket) {
             this.streamState.error = 'WEBRTC_ERROR:SOCKET_EXIST';
@@ -175,25 +202,42 @@ export class WebRTC {
         }
 
         this.socketReconnectCounter += 1;
+        log('info', 'WebRTC.connectSocket: connecting socket', { event_name: 'socket_connect_attempt', attempt: this.socketReconnectCounter });
 
-        this.socket = io({
+        const socket = io({
             path: '/app/socket',
             transports: ['websocket'],
             auth: { clientToken: token },
             reconnection: false,
         });
+        this.socket = socket;
 
-        this.socket.on('connect', () => {
+        socket.on('connect', () => {
+            if (this.socket !== socket) {
+                socket.disconnect();
+                return;
+            }
+            if (!this.hasJoinIntent()) {
+                log('info', 'WebRTC.connectSocket: Socket connected without active join intent. Disconnecting.');
+                this.disconnectSocket();
+                return;
+            }
             if (window.DD_LOGS && DD_LOGS.setGlobalContextProperty) {
-                DD_LOGS.setGlobalContextProperty('socket', this.socket.id);
+                DD_LOGS.setGlobalContextProperty('socket', socket.id);
             }
 
             this.socketReconnectCounter = 0;
 
             this.streamState.isSocketConnected = true;
             this.streamState.isTokenAvailable = false;
+            log('info', 'WebRTC.connectSocket: socket connected', { event_name: 'socket_connect_result', result: 'ok', socket: socket.id });
 
-            if (this.streamState.isStreamJoined && this.streamState.streamId && this.streamPassword) {
+            if (this.pendingJoinRequest) {
+                const { streamId, password } = this.pendingJoinRequest;
+                this.pendingJoinRequest = null;
+                this.streamState.isJoiningStream = false;
+                this.joinStream(streamId, password);
+            } else if (this.streamState.isStreamJoined && this.streamState.streamId && this.streamPassword) {
                 log('info', 'WebRTC.connectSocket: Socket reconnected. Rejoining stream.', { streamId: this.streamState.streamId });
                 this.clearJoinRetry();
                 this.streamState.isReconnectMode = true;
@@ -201,7 +245,8 @@ export class WebRTC {
             }
         });
 
-        this.socket.on('disconnect', (reason) => {
+        socket.on('disconnect', (reason) => {
+            if (this.socket !== socket) return;
             if (window.DD_LOGS && DD_LOGS.removeGlobalContextProperty) {
                 DD_LOGS.removeGlobalContextProperty('socket');
             }
@@ -216,8 +261,9 @@ export class WebRTC {
             }
         });
 
-        this.socket.on('connect_error', (error) => {
-            log('warn', `WebRTC.connectSocket: [connect_error] => ${error.message}`, { reason: error.message });
+        socket.on('connect_error', (error) => {
+            if (this.socket !== socket) return;
+            log('warn', `WebRTC.connectSocket: [connect_error] => ${error.message}`, { event_name: 'socket_connect_result', result: 'error', reason: error.message });
 
             this.cleanupSocket();
 
@@ -227,11 +273,14 @@ export class WebRTC {
             if (this.streamState.isStreamJoined && this.streamState.streamId && this.streamPassword && this.socketReconnectCounter < 10) {
                 setTimeout(() => this.waitForServerOnlineAndConnect(), 3000);
             } else {
+                this.pendingJoinRequest = null;
+                this.streamState.isJoiningStream = false;
                 this.streamState.error = getConnectErrorStatus(error);
             }
         });
 
-        this.socket.on('SOCKET:ERROR', (error, callback) => {
+        socket.on('SOCKET:ERROR', (error, callback) => {
+            if (this.socket !== socket) return;
             log('warn', `WebRTC.connectSocket: [SOCKET:ERROR]: ${error.status}`, { reason: error.status });
 
             // SOCKET_CHECK_ERROR:UNVERIFIED_SOCKET
@@ -246,6 +295,24 @@ export class WebRTC {
 
             if (callback) callback({ status: 'OK' });
         });
+    }
+
+    disconnectSocket() {
+        const socket = this.socket;
+        if (!socket) return;
+        this.removeStreamSocketListeners();
+        socket.off('connect')
+            .off('disconnect')
+            .off('connect_error')
+            .off('SOCKET:ERROR');
+        socket.disconnect();
+        if (window.DD_LOGS && DD_LOGS.removeGlobalContextProperty) {
+            DD_LOGS.removeGlobalContextProperty('socket');
+        }
+        this.socket = null;
+        this.streamState.isSocketConnected = false;
+        this.streamState.isTokenAvailable = false;
+        this.streamState.isServerAvailable = false;
     }
 
     cleanupSocket() {
@@ -294,9 +361,16 @@ export class WebRTC {
             return;
         }
 
+        if (this.streamState.isJoiningStream) {
+            log('info', 'WebRTC.joinStream: Already joining stream. Ignoring.');
+            return;
+        }
+
         if (!this.streamState.isSocketConnected) {
-            log('warn', 'WebRTC.joinStream: No socket connected');
-            this.streamState.error = 'WEBRTC_ERROR:NO_SOCKET_CONNECTED';
+            log('info', 'WebRTC.joinStream: Socket unavailable. Connecting before join.', { event_name: 'join_deferred', streamId });
+            this.pendingJoinRequest = { streamId, password };
+            this.streamState.isJoiningStream = true;
+            this.waitForServerOnlineAndConnect();
             return;
         }
 
@@ -306,35 +380,35 @@ export class WebRTC {
             return;
         }
 
-        if (this.streamState.isJoiningStream) {
-            log('info', 'WebRTC.joinStream: Already joining stream. Ignoring.');
-            return;
-        }
-
+        this.pendingJoinRequest = { streamId, password };
         this.streamState.isJoiningStream = true;
         this.clearJoinRetry();
         const joinToken = ++this._joinToken;
+        const runId = this._lifecycleId;
         const joinSocket = this.socket;
+        const isCurrentJoin = () => runId === this._lifecycleId && this.socket === joinSocket && this._joinToken === joinToken;
 
         try {
             const data = this.clientId + streamId + password;
             const hashBuffer = await window.crypto.subtle.digest('SHA-384', new TextEncoder().encode(data));
+            if (!isCurrentJoin() || !this.streamState.isJoiningStream) return;
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             const passwordHash = btoa(String.fromCharCode(...hashArray)).replace(/\+/g, '-').replace(/\//g, '_');
 
             joinSocket.timeout(7000).emit('STREAM:JOIN', { streamId, passwordHash, protocolVersion: PROTOCOL_VERSION }, (error, response) => {
-                if (this.socket !== joinSocket || this._joinToken !== joinToken) return;
+                if (!isCurrentJoin()) return;
                 const retryJoinOrSetError = (errorStatus) => {
                     const isTransient = TRANSIENT_JOIN_ERRORS.has(errorStatus);
                     if ((this.streamState.isReconnectMode && isTransient) || (attempt < 3 && isTransient)) {
                         const timeout = Math.min(Math.floor(2000 * (1.1 ** (attempt))), 15_000);
                         log('debug', `WebRTC.joinStream: ${streamId}. Attempt: ${attempt} failed. Attempting to reconnect with ${timeout}ms timeout...`, { streamId });
                         this._timeoutId = setTimeout(() => {
-                            if (this._joinToken !== joinToken) return;
+                            if (!isCurrentJoin()) return;
                             this.streamState.isJoiningStream = false;
                             this.joinStream(streamId, password, attempt + 1);
                         }, timeout);
                     } else {
+                        this.pendingJoinRequest = null;
                         this.streamState.isJoiningStream = false;
                         if (this.streamState.isReconnectMode && this.streamState.isStreamJoined) {
                             this.leaveStream(false);
@@ -359,6 +433,7 @@ export class WebRTC {
                     retryJoinOrSetError('ERROR:BAD_PROTOCOL_VERSION');
                     return;
                 }
+                this.pendingJoinRequest = null;
                 this.streamState.isJoiningStream = false;
                 this.hostProtocolVersion = response.protocolVersion === PROTOCOL_VERSION ? PROTOCOL_VERSION : 1;
                 this.streamState.streamId = streamId;
@@ -369,6 +444,8 @@ export class WebRTC {
                 this.setupSocketEventListeners(attempt, joinToken);
             });
         } catch (error) {
+            if (!isCurrentJoin()) return;
+            this.pendingJoinRequest = null;
             this.streamState.isJoiningStream = false;
             log('warn', `WebRTC.joinStream: failed to prepare join request: ${error?.message || error}`, { reason: error?.message || error });
             this.streamState.error = 'WEBRTC_ERROR:NEGOTIATION_ERROR:STREAM_JOIN';
@@ -774,8 +851,11 @@ export class WebRTC {
     }
 
     stopStream(invalidateJoin = false) {
+        this._lifecycleId += 1;
         this._negotiationToken += 1;
         if (invalidateJoin) this._joinToken += 1;
+        this.pendingJoinRequest = null;
+        this._isConnecting = false;
         clearTimeout(this.hostOfferTimeout);
         clearTimeout(this.peerDisconnectedTimeout);
         this.hostOfferTimeout = null;
@@ -792,6 +872,7 @@ export class WebRTC {
     }
 
     leaveStream(notifyServer = true, forcedByServer = false) {
+        const hadStream = this.streamState.isStreamJoined;
         this.stopStream(true);
         this.hostProtocolVersion = null;
 
@@ -806,6 +887,8 @@ export class WebRTC {
                 }
             });
         }
+
+        if (!hadStream) this.disconnectSocket();
 
         this.streamState.isStreamJoined = false;
         this.streamState.streamId = null;

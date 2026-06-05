@@ -9,6 +9,8 @@
     "stream-join": "Dołącz do strumienia",
     "stream-cancel": "Anuluj",
     "stream-connecting": "Łączenie...",
+    "stream-verifying": "Weryfikacja...",
+    "opens-new-tab": "otwiera się w nowej karcie",
     "stream-connecting-stream": "Łączenie ze strumieniem...",
     "stream-reconnecting": "Ponowne łączenie ze strumieniem...",
     "stream-id-header": "Identyfikator strumienia: {streamId}",

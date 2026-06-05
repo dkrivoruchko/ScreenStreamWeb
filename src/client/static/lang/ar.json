@@ -9,6 +9,8 @@
     "stream-join": "الانضمام إلى البث",
     "stream-cancel": "إلغاء",
     "stream-connecting": "جارٍ الاتصال...",
+    "stream-verifying": "جارٍ التحقق...",
+    "opens-new-tab": "يفتح في علامة تبويب جديدة",
     "stream-connecting-stream": "جارٍ الاتصال بالبث...",
     "stream-reconnecting": "جارٍ إعادة الاتصال بالبث...",
     "stream-id-header": "معرّف البث: {streamId}",

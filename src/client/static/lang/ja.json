@@ -9,6 +9,8 @@
     "stream-join": "ストリームに参加",
     "stream-cancel": "キャンセル",
     "stream-connecting": "接続中...",
+    "stream-verifying": "確認中...",
+    "opens-new-tab": "新しいタブで開きます",
     "stream-connecting-stream": "ストリームに接続中...",
     "stream-reconnecting": "ストリームに再接続しています...",
     "stream-id-header": "ストリームID: {streamId}",

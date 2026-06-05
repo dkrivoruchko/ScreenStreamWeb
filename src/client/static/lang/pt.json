@@ -9,6 +9,8 @@
     "stream-join": "Entrar na transmissão",
     "stream-cancel": "Cancelar",
     "stream-connecting": "Conectando...",
+    "stream-verifying": "Verificando...",
+    "opens-new-tab": "abre em uma nova aba",
     "stream-connecting-stream": "Conectando à transmissão...",
     "stream-reconnecting": "Reconectando à transmissão...",
     "stream-id-header": "ID da transmissão: {streamId}",

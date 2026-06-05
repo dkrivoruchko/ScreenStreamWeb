@@ -9,6 +9,8 @@
     "stream-join": "स्ट्रीम में शामिल हों",
     "stream-cancel": "रद्द करें",
     "stream-connecting": "कनेक्ट हो रहा है...",
+    "stream-verifying": "सत्यापन हो रहा है...",
+    "opens-new-tab": "नई टैब में खुलता है",
     "stream-connecting-stream": "स्ट्रीम से कनेक्ट हो रहा है...",
     "stream-reconnecting": "स्ट्रीम से फिर से कनेक्ट हो रहा है...",
     "stream-id-header": "स्ट्रीम आईडी: {streamId}",

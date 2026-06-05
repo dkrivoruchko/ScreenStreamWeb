@@ -86,6 +86,18 @@ body {
     color: #fff
 }
 
+#start-container .external-link {
+    white-space: nowrap
+}
+
+#start-container .external-link-icon {
+    width: .72em;
+    height: .72em;
+    margin-left: .16em;
+    fill: currentColor;
+    vertical-align: .08em
+}
+
 #start-container #privacy a {
     color: #aaa
 }
@@ -93,6 +105,54 @@ body {
 #start-container #stream-error {
     color: #f00;
     margin: 16px 0 24px
+}
+
+#stream-join {
+    min-width: 300px;
+    min-height: 44px;
+    padding-top: 8px;
+    text-align: center;
+    vertical-align: top
+}
+
+#stream-join.joining #join-actions {
+    display: none
+}
+
+#join-progress {
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 32px;
+    margin-bottom: 8px
+}
+
+#join-status {
+    color: #aaa;
+    font-size: small;
+    line-height: 32px
+}
+
+#turnstile-container {
+    display: none;
+    justify-content: center
+}
+
+#stream-join.joining #turnstile-container {
+    display: flex;
+    min-height: 70px
+}
+
+#start-container #streamCancelButton {
+    background: transparent;
+    color: #ccc;
+    box-shadow: none;
+    padding: 8px 12px
+}
+
+#start-container #streamCancelButton:hover {
+    color: #fff;
+    text-decoration: underline
 }
 
 .loading span {
@@ -147,6 +207,7 @@ body {
 }
 
 #streaming-header {
+    box-sizing: border-box;
     padding: 8px;
     width: 100%;
     position: absolute;
@@ -159,7 +220,26 @@ body {
 
 #streaming-header table {
     width: 100%;
-    table-layout: fixed
+    border-collapse: collapse
+}
+
+#streaming-header tr {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px
+}
+
+#streaming-header td {
+    min-width: 0
+}
+
+#streaming-header td:nth-child(2) {
+    overflow-wrap: anywhere
+}
+
+#streaming-header td:last-child {
+    text-align: right
 }
 
 #streaming-header img {
@@ -175,7 +255,10 @@ body {
     text-align: center;
     padding: 8px 16px;
     font-size: 16px;
-    margin-right: 16px
+    margin-right: 0;
+    max-width: 34vw;
+    white-space: normal;
+    overflow-wrap: break-word
 }
 
 .visible {
@@ -209,6 +292,12 @@ body {
     #stream-wait-container {
         padding: 30px;
         width: 55%
+    }
+
+    #streaming-header button {
+        padding: 8px 10px;
+        font-size: 14px;
+        max-width: 32vw
     }
 }
 

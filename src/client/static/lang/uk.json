@@ -9,6 +9,8 @@
     "stream-join": "Приєднатися до трансляції",
     "stream-cancel": "Скасувати",
     "stream-connecting": "Підключення...",
+    "stream-verifying": "Перевірка...",
+    "opens-new-tab": "відкриється в новій вкладці",
     "stream-connecting-stream": "Підключення до трансляції...",
     "stream-reconnecting": "Повторне підключення до трансляції...",
     "stream-id-header": "Ідентифікатор трансляції: {streamId}",
