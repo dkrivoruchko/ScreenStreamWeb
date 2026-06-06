@@ -334,10 +334,7 @@ UIElements.startForm.addEventListener('submit', (e) => {
     webRTC.joinStream(UIElements.streamIdInput.value, UIElements.passwordInput.value);
 });
 
-window.onloadTurnstileCallback = () => {
-    window.__turnstileScriptStatus = 'loaded';
-    window.dispatchEvent(new Event('turnstile-script-loaded'));
-    log('info', 'Turnstile script loaded', { event_name: 'turnstile_script_load', phase: 'script', result: 'ok' });
+const checkCompatibilityAfterTurnstileLoad = () => {
     if (window.streamState.error) return;
     const startupCompatibilityError = getStartupCompatibilityError();
     if (startupCompatibilityError) {
@@ -345,11 +342,19 @@ window.onloadTurnstileCallback = () => {
     }
 };
 
-window.onTurnstileScriptError = () => {
-    window.__turnstileScriptStatus = 'failed';
-    window.dispatchEvent(new Event('turnstile-script-failed'));
+const onTurnstileScriptLoaded = () => {
+    log('info', 'Turnstile script loaded', { event_name: 'turnstile_script_load', phase: 'script', result: 'ok' });
+    checkCompatibilityAfterTurnstileLoad();
+};
+
+const onTurnstileScriptFailed = () => {
     log('warn', 'Turnstile script failed to load', { event_name: 'turnstile_script_load', phase: 'script', result: 'error', reason: 'ERROR:TURNSTILE:SCRIPT_LOAD_FAILED' });
 };
+
+window.addEventListener('turnstile-script-loaded', onTurnstileScriptLoaded);
+window.addEventListener('turnstile-script-failed', onTurnstileScriptFailed);
+if (window.__turnstileScriptStatus === 'loaded') onTurnstileScriptLoaded();
+if (window.__turnstileScriptStatus === 'failed') onTurnstileScriptFailed();
 
 window.addEventListener('beforeunload', () => {
     webRTC.leaveStream(false);
