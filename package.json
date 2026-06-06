@@ -1,6 +1,6 @@
 {
   "name": "screenstream.io",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Server and Web Client for ScreenStream Android App",
   "homepage": "https://screenstream.io",
   "license": "MIT",
@@ -19,6 +19,7 @@
     "node": "24.x"
   },
   "dependencies": {
+    "core-js": "^3.49.0",
     "datadog-winston": "^1.6.0",
     "express": "^5.2.0",
     "gtoken": "^8.0.0",
@@ -27,6 +28,16 @@
     "socket.io-client": "^4.8.0",
     "winston": "^3.19.0"
   },
+  "browserslist": [
+    "Chrome >= 80",
+    "ChromeAndroid >= 80",
+    "Edge >= 80",
+    "Firefox >= 90",
+    "Safari >= 12",
+    "iOS >= 12",
+    "Samsung >= 8",
+    "not dead"
+  ],
   "optionalDependencies": {
     "bufferutil": "^4.1.0",
     "utf-8-validate": "^5.0.0"

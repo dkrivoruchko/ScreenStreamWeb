@@ -51,6 +51,16 @@
     window.__turnstileScriptStatus = "loading";
     window.__activeTurnstileCancel = null;
 
+    window.onloadTurnstileCallback = function () {
+      window.__turnstileScriptStatus = "loaded";
+      window.dispatchEvent(new Event("turnstile-script-loaded"));
+    };
+
+    window.onTurnstileScriptError = function () {
+      window.__turnstileScriptStatus = "failed";
+      window.dispatchEvent(new Event("turnstile-script-failed"));
+    };
+
     function clearTurnstileContainer() {
       var turnstileContainer = document.getElementById("turnstile-container");
       if (turnstileContainer) turnstileContainer.innerHTML = "";
