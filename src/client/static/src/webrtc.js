@@ -148,7 +148,7 @@ export class WebRTC {
         }
     }
 
-    async waitForServerOnlineAndConnect() {
+    async waitForServerOnlineAndConnect(authRetryCount = 0) {
         if (this._isConnecting) {
             log('info', 'WebRTC.waitForServerOnlineAndConnect: Already connecting...');
             return;
@@ -172,11 +172,12 @@ export class WebRTC {
 
             const token = await this.getTurnstileTokenAsync(this.clientId);
             if (!isCurrent()) return;
-            this.connectSocket(token);
+            this.connectSocket(token, authRetryCount);
         } catch (error) {
             if (!isCurrent()) return;
             const reason = error?.message || error;
-            log('warn', `WebRTC.waitForServerOnlineAndConnect: token error: ${reason}`, { event_name: 'turnstile_result', phase: 'turnstile', result: 'error', reason });
+            const isTurnstileError = typeof reason === 'string' && reason.startsWith('ERROR:TURNSTILE:');
+            log(isTurnstileError ? 'debug' : 'warn', `WebRTC.waitForServerOnlineAndConnect: token error: ${reason}`, { event_name: isTurnstileError ? 'turnstile_join_blocked' : 'turnstile_result', phase: 'turnstile', result: 'error', reason });
             this.pendingJoinRequest = null;
             this.streamState.isJoiningStream = false;
             this.streamState.error = getConnectErrorStatus(error);
@@ -185,7 +186,7 @@ export class WebRTC {
         }
     }
 
-    connectSocket(token) {
+    connectSocket(token, authRetryCount = 0) {
         this.streamState.isTokenAvailable = true;
 
         if (typeof io !== 'function') {
@@ -263,13 +264,19 @@ export class WebRTC {
 
         socket.on('connect_error', (error) => {
             if (this.socket !== socket) return;
-            log('warn', `WebRTC.connectSocket: [connect_error] => ${error.message}`, { event_name: 'socket_connect_result', result: 'error', reason: error.message });
+            const reason = error.message;
+            log('warn', `WebRTC.connectSocket: [connect_error] => ${reason}`, { event_name: 'socket_connect_result', result: 'error', reason });
 
             this.cleanupSocket();
 
             //ERROR:TOKEN_VERIFICATION_FAILED:TURNSTYLE_INVALID_TOKEN:${outcome['error-codes']}
             //ERROR:TOKEN_VERIFICATION_FAILED:TURNSTYLE_INVALID_HOSTNAME:${outcome.hostname}
             //ERROR:TOKEN_VERIFICATION_FAILED:TURNSTYLE_INVALID_CLIENT_ID:${outcome.cdata}
+            if (authRetryCount < 1 && this.hasJoinIntent() && /^ERROR:TOKEN_VERIFICATION_FAILED:TURNST[YI]LE_INVALID_TOKEN:/.test(reason) && /(invalid-input-response|timeout-or-duplicate)/.test(reason)) {
+                log('info', 'WebRTC.connectSocket: retrying with a fresh Turnstile token', { event_name: 'turnstile_auth_retry', reason, attempt: authRetryCount + 1 });
+                setTimeout(() => this.waitForServerOnlineAndConnect(authRetryCount + 1), 0);
+                return;
+            }
             if (this.streamState.isStreamJoined && this.streamState.streamId && this.streamPassword && this.socketReconnectCounter < 10) {
                 setTimeout(() => this.waitForServerOnlineAndConnect(), 3000);
             } else {
