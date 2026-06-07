@@ -160,14 +160,18 @@
           window.DD_LOGS && DD_LOGS.logger.info("Turnstile token attempt", { event_name: "turnstile_token_attempt", phase: "turnstile", attempt: 1 });
 
           timeoutId = setTimeout(function () {
+            window.DD_LOGS && DD_LOGS.logger.warn("Turnstile token deadline exceeded", { event_name: "turnstile_token_deadline_exceeded", phase: "turnstile", result: "error", reason: "ERROR:TURNSTILE:TIMEOUT", final: true });
             settle("ERROR:TURNSTILE:TIMEOUT");
-          }, 30000);
+          }, 60000);
 
           try {
             turnstileWidgetId = window.turnstile.render("#turnstile-container", {
               sitekey: "$TURNSTYLE_SITE_KEY$",
+              action: "join",
               cData: clientId,
               retry: "auto",
+              'refresh-expired': "auto",
+              'refresh-timeout': "auto",
               callback: function callback(token) {
                 window.DD_LOGS && DD_LOGS.logger.info("Turnstile token received", { event_name: "turnstile_result", phase: "turnstile", result: "ok" });
                 settle(token, true);
@@ -175,15 +179,18 @@
               'error-callback': function errorCallback(error_code) {
                 var retryable = isRetryableTurnstileError(error_code);
                 window.DD_LOGS && DD_LOGS.logger[retryable ? "debug" : "warn"]("Turnstile error", { event_name: "turnstile_result", phase: "turnstile", result: "error", reason: error_code, retryable: retryable });
-                if (retryable) return;
-                settle("ERROR:TURNSTILE:".concat(error_code || "FAILED"));
+                if (!retryable) settle("ERROR:TURNSTILE:".concat(error_code || "FAILED"));
+                return true;
               },
               'expired-callback': function expiredCallback() {
                 window.DD_LOGS && DD_LOGS.logger.info("Turnstile expired", { event_name: "turnstile_result", phase: "turnstile", result: "expired", retryable: true });
               },
               'timeout-callback': function timeoutCallback() {
-                window.DD_LOGS && DD_LOGS.logger.warn("Turnstile timeout", { event_name: "turnstile_result", phase: "turnstile", result: "timeout", reason: "ERROR:TURNSTILE:TIMEOUT", retryable: true });
-                settle("ERROR:TURNSTILE:TIMEOUT");
+                window.DD_LOGS && DD_LOGS.logger.info("Turnstile interactive timeout", { event_name: "turnstile_interactive_timeout", phase: "turnstile", result: "timeout", reason: "ERROR:TURNSTILE:INTERACTIVE_TIMEOUT", retryable: true });
+              },
+              'unsupported-callback': function unsupportedCallback() {
+                window.DD_LOGS && DD_LOGS.logger.warn("Turnstile unsupported browser", { event_name: "turnstile_result", phase: "turnstile", result: "error", reason: "ERROR:TURNSTILE:UNSUPPORTED", retryable: false });
+                settle("ERROR:TURNSTILE:UNSUPPORTED");
               }
             });
           } catch (error) {
