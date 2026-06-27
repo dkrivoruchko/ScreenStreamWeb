@@ -115,7 +115,6 @@ export default function (io, socket) {
 
         const hostSocket = await getHostSocket(io, payload.streamId);
         if (!hostSocket?.connected || hostSocket.data?.protocolVersion !== PROTOCOL_VERSION) {
-            socket.data.errorCounter += 1;
             logJoin('info', 'user_error', Status.NO_HOST);
             ack(callback, Status.NO_HOST);
             return;
@@ -155,8 +154,8 @@ export default function (io, socket) {
 
             if (response?.status !== Status.OK) {
                 socket.data.pendingJoinAttemptId = undefined;
-                socket.data.errorCounter += 1;
                 const ackStatus = response?.status || Status.BAD_DATA;
+                if (ackStatus !== Status.NO_HOST) socket.data.errorCounter += 1;
                 logJoin(USER_CORRECTABLE_JOIN_ACKS.has(ackStatus) ? 'info' : 'warn', USER_CORRECTABLE_JOIN_ACKS.has(ackStatus) ? 'user_error' : 'error', ackStatus, { joinAttemptId });
                 ack(callback, ackStatus);
                 return;
