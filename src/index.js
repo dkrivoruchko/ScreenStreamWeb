@@ -101,6 +101,7 @@ const expressServer = expressApp.listen(PORT, () => {
 const io = new Server(expressServer, {
   path: '/app/socket',
   transports: ['websocket'],
+  serveClient: false,
   cleanupEmptyChildNamespaces: true,
 });
 
