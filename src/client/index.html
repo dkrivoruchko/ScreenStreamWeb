@@ -3,6 +3,38 @@
 
 <head>
   <meta charset="utf-8">
+  <script>
+    "use strict";
+
+    (function captureAndScrubStreamCredentials() {
+      var query = new URLSearchParams(window.location.search);
+      var fragment = new URLSearchParams(window.location.hash.slice(1));
+      var streamId = query.get("id");
+      var fragmentHasPassword = fragment.has("p");
+      var streamPassword = (fragmentHasPassword ? fragment : query).get("p");
+      var hasPassword = fragmentHasPassword || query.has("p");
+
+      if (!hasPassword) return;
+      query.delete("p");
+      if (fragmentHasPassword) fragment.delete("p");
+      var cleanSearch = query.toString();
+      var cleanFragment = fragmentHasPassword ? fragment.toString() : window.location.hash.slice(1);
+      window.history.replaceState(
+        window.history.state,
+        "",
+        window.location.pathname +
+          (cleanSearch ? "?" + cleanSearch : "") +
+          (cleanFragment ? "#" + cleanFragment : "")
+      );
+
+      if (/^\d{8}$/.test(streamId || "") && /^[A-Za-z0-9]{6}$/.test(streamPassword || "")) {
+        document.addEventListener("DOMContentLoaded", function populateStreamCredentials() {
+          document.getElementById("stream-id").value = streamId;
+          document.getElementById("stream-password").value = streamPassword;
+        }, { once: true });
+      }
+    }());
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <link rel="icon" type="image/x-icon" sizes="any" href="/favicon.ico">
   <link rel="stylesheet" href="/index.css">
@@ -21,7 +53,7 @@
       service: "$DD_SERVICE$",
       beforeSend: function beforeSend(log, context) {
         var sensitiveKey = /^(jwt|hostToken|clientToken|passwordHash|offer|answer|candidate|candidates|sdp|credential|token|accessToken)$/i;
-        function scrubString(value) { return value.replace(/([?&](?:p|password|passwordHash|clientToken|hostToken|jwt|token|dd-api-key)=)[^&\s]*/gi, "$1*"); }
+        function scrubString(value) { return value.replace(/([?&#](?:p|password|passwordHash|clientToken|hostToken|jwt|token|dd-api-key)=)[^&#\s]*/gi, "$1*"); }
         function scrub(value, key) {
           if (sensitiveKey.test(key || "")) return "*";
           if (typeof value === "string") return scrubString(value);
