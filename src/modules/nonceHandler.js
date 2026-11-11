@@ -10,13 +10,6 @@ const MAX_NONCES = 1000;
 const nonces = new Map();
 
 export function nonceHandler(reg, res) {
-    let nonce;
-    do {
-        nonce = randomBytes(32).toString('base64url');
-    } while (nonces.has(nonce));
-
-    nonces.set(nonce, Date.now() + NONCE_MIN_WAIT_TIMEOUT);
-
     if (nonces.size >= MAX_NONCES) {
         const now = Date.now();
         nonces.forEach((value, key, map) => { if (value <= now) map.delete(key); });
@@ -26,6 +19,13 @@ export function nonceHandler(reg, res) {
         }
     }
 
+    let nonce;
+    do {
+        nonce = randomBytes(32).toString('base64url');
+    } while (nonces.has(nonce));
+
+    nonces.set(nonce, Date.now() + NONCE_MIN_WAIT_TIMEOUT);
+
     res
         .type('txt')
         .setHeader('Cache-Control', 'no-store')
@@ -34,9 +34,9 @@ export function nonceHandler(reg, res) {
 }
 
 export function isValidNonce(nonce) {
-    const present = nonces.has(nonce);
+    const expiresAt = nonces.get(nonce);
     nonces.delete(nonce);
-    return present;
+    return expiresAt !== undefined && expiresAt > Date.now();
 }
 
 const cleanupInterval = setInterval(() => {

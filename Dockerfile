@@ -1,4 +1,4 @@
-FROM node:24.22.1-bookworm-slim AS build
+FROM node:24.22.2-bookworm-slim AS build
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY babel.config.json webpack.config.cjs ./
 COPY src ./src
 RUN npm run build && npm prune --omit=dev
 
-FROM node:24.22.1-bookworm-slim
+FROM node:24.22.2-bookworm-slim
 
 WORKDIR /app
 
